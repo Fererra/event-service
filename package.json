@@ -1,0 +1,30 @@
+{
+  "name": "auth-app",
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "ts-node src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+    "docker:up": "docker compose up --build -d",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f app",
+    "docker:restart": "docker compose restart app",
+    "db:up": "docker compose up postgres -d",
+    "db:down": "docker compose stop postgres",
+    "docker:clean": "docker compose down -v --remove-orphans"
+  },
+  "dependencies": {
+    "argon2": "^0.44.0",
+    "fastify": "^5.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.0",
+    "reflect-metadata": "^0.2.2",
+    "typeorm": "^0.3.20"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/node": "^22.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}
