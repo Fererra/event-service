@@ -1,6 +1,6 @@
 import { DataSource } from "typeorm";
-import { UserOrmEntity } from "../modules/auth/infrastructure/orm/entities/user.orm-entity";
-import { RefreshTokenOrmEntity } from "../modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
+import { UserOrmEntity } from "../../modules/auth/infrastructure/orm/entities/user.orm-entity";
+import { RefreshTokenOrmEntity } from "../../modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
 
 export function createDataSource(config: {
   host: string;
