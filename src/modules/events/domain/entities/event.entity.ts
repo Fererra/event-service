@@ -20,8 +20,8 @@ export interface EventProps {
   description: string;
   period: EventPeriod;
   status: EventStatus;
-  createdAt: Date;
   venueId: number;
+  createdAt: Date;
 }
 
 export class Event {
@@ -32,8 +32,8 @@ export class Event {
   private _description: string;
   private _period: EventPeriod;
   private _status: EventStatus;
-  private readonly _createdAt: Date;
   private _venueId: number;
+  private readonly _createdAt: Date;
 
   constructor(props: EventProps) {
     this._id = props.id;
@@ -43,8 +43,8 @@ export class Event {
     this._description = props.description;
     this._period = props.period;
     this._status = props.status;
-    this._createdAt = props.createdAt;
     this._venueId = props.venueId;
+    this._createdAt = props.createdAt;
   }
 
   get id(): number {
@@ -74,11 +74,11 @@ export class Event {
   get status(): EventStatus {
     return this._status;
   }
-  get createdAt(): Date {
-    return this._createdAt;
-  }
   get venueId(): number {
     return this._venueId;
+  }
+  get createdAt(): Date {
+    return this._createdAt;
   }
 
   cancel(): void {
