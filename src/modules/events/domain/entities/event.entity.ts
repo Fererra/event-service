@@ -119,7 +119,7 @@ export class Event {
     return this._ownerId === userId;
   }
 
-  isCancelled(): boolean {
-    return this._status === EventStatus.CANCELLED;
+  isCancelledOrFinished(): boolean {
+    return this._status === EventStatus.CANCELLED || this._status === EventStatus.FINISHED;
   }
 }
