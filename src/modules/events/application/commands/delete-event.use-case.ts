@@ -9,7 +9,7 @@ export interface DeleteEventCommand {
 export class DeleteEventUseCase {
   constructor(private readonly eventsRepository: IEventRepository) {}
 
-  async execcute(command: DeleteEventCommand): Promise<void> {
+  async execute(command: DeleteEventCommand): Promise<void> {
     const event = await this.eventsRepository.findById(command.eventId);
     if (!event) {
       throw new NotFoundError(`Event ${command.eventId} not found`);
