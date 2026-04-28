@@ -13,6 +13,10 @@ import { registerAuthRoutes } from "./modules/auth/presentation/controllers/auth
 import { registerExceptionHandlers } from "./modules/auth/presentation/hooks/exception.handler";
 import { UserOrmEntity } from "./modules/auth/infrastructure/orm/entities/user.orm-entity";
 import { RefreshTokenOrmEntity } from "./modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
+import { venueRoutes } from "./modules/venue/presentation/controllers/venue.controller";
+import { CreateVenueUseCase } from "./modules/venue/application/use-cases/create-venue.use-case";
+import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
+import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
 
 async function bootstrap() {
   const config = {
@@ -66,7 +70,14 @@ async function bootstrap() {
     tokenService,
   );
 
+  const venueRepository = new PostgresVenueRepository(
+    dataSource.getRepository(VenueOrmEntity),
+  );
+  const createVenueUseCase = new CreateVenueUseCase(venueRepository);
+
   const app = Fastify({ logger: true });
+
+  venueRoutes(app, createVenueUseCase, tokenService);
 
   registerExceptionHandlers(app);
 
