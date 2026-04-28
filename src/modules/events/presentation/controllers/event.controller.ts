@@ -1,6 +1,6 @@
 import { FastifyInstance } from "fastify";
-import { GetEventTicketsUseCase } from "../../../tickets/application/queries/get-event-tickets.use-case";
 import { GetEventsUseCase } from "../../application/queries/get-events.use-case";
+import { GetEventUseCase } from "../../application/queries/get-event.use.case";
 import { CreateEventUseCase } from "../../application/commands/create-event.use-case";
 import { UpdateEventUseCase } from "../../application/commands/update-event.use-case";
 import { CancelEventUseCase } from "../../application/commands/cancel-event.use-case";
@@ -16,8 +16,6 @@ import {
 import { createJwtGuard } from "../../../auth/presentation/guards/jwt.guard";
 import { createAdminGuard } from "../../../auth/presentation/guards/admin.guard";
 import { TokenService } from "../../../auth/application/ports/token.service";
-import { stringify } from "querystring";
-import { create } from "domain";
 
 function toEventResponse(event: Event): EventResponseDto {
   return {
@@ -36,7 +34,7 @@ function toEventResponse(event: Event): EventResponseDto {
 
 export interface EventUseCases {
   getEventsUseCase: GetEventsUseCase;
-  getEventUseCase: GetEventTicketsUseCase;
+  getEventUseCase: GetEventUseCase;
   createEventUseCase: CreateEventUseCase;
   updateEventUseCase: UpdateEventUseCase;
   cancelEventUseCase: CancelEventUseCase;
