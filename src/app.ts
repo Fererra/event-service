@@ -1,6 +1,8 @@
 import "reflect-metadata";
 import Fastify from "fastify";
 import { createDataSource } from "./shared/infrastructure/database.config";
+
+// Auth imports
 import { PostgresUserRepository } from "./modules/auth/infrastructure/repositories/postgres-user.repository";
 import { PostgresRefreshTokenRepository } from "./modules/auth/infrastructure/repositories/postgres-refresh-token.repository";
 import { Argon2PasswordService } from "./modules/auth/infrastructure/services/argon-password.service";
@@ -14,6 +16,20 @@ import { registerExceptionHandlers } from "./modules/auth/presentation/hooks/exc
 import { UserOrmEntity } from "./modules/auth/infrastructure/orm/entities/user.orm-entity";
 import { RefreshTokenOrmEntity } from "./modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
 
+// Events imports
+import { EventOrmEntity } from "./modules/events/infrastructure/orm/entities/event.orm-entity";
+import { PostgresEventRepository } from "./modules/events/infrastructure/repositories/postgres-event.repository";
+import { PostgresVenueRepository as EventsVenueRepository } from "./modules/events/infrastructure/repositories/postgres-venue.repository";
+import { TicketCreatorAdapter } from "./modules/events/infrastructure/adapters/ticket-creator.adapter";
+import { EventFactory } from "./modules/events/domain/factories/event.factory";
+import { GetEventUseCase } from "./modules/events/application/queries/get-event.use.case";
+import { GetEventsUseCase } from "./modules/events/application/queries/get-events.use-case";
+import { UpdateEventUseCase } from "./modules/events/application/commands/update-event.use-case";
+import { CancelEventUseCase } from "./modules/events/application/commands/cancel-event.use-case";
+import { CreateEventUseCase } from "./modules/events/application/commands/create-event.use-case";
+import { DeleteEventUseCase } from "./modules/events/application/commands/delete-event.use-case";
+import { registerEventRoutes } from "./modules/events/presentation/controllers/event.controller";
+
 async function bootstrap() {
   const config = {
     port: Number(process.env.PORT) || 3000,
@@ -25,10 +41,8 @@ async function bootstrap() {
       database: process.env.DB_NAME || "auth_db",
     },
     jwt: {
-      accessSecret:
-        process.env.JWT_ACCESS_SECRET || "access-secret-change-in-prod",
-      refreshSecret:
-        process.env.JWT_REFRESH_SECRET || "refresh-secret-change-in-prod",
+      accessSecret: process.env.JWT_ACCESS_SECRET || "access-secret-change-in-prod",
+      refreshSecret: process.env.JWT_REFRESH_SECRET || "refresh-secret-change-in-prod",
       accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
       refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
     },
@@ -37,9 +51,8 @@ async function bootstrap() {
   const dataSource = createDataSource(config.db);
   await dataSource.initialize();
 
-  const userRepository = new PostgresUserRepository(
-    dataSource.getRepository(UserOrmEntity),
-  );
+  // Auth
+  const userRepository = new PostgresUserRepository(dataSource.getRepository(UserOrmEntity));
   const refreshTokenRepository = new PostgresRefreshTokenRepository(
     dataSource.getRepository(RefreshTokenOrmEntity),
   );
@@ -66,6 +79,22 @@ async function bootstrap() {
     tokenService,
   );
 
+  // Events
+  const eventRepository = new PostgresEventRepository(dataSource.getRepository(EventOrmEntity));
+  const eventsVenueRepository = new EventsVenueRepository(dataSource);
+
+  const eventFactory = new EventFactory(eventsVenueRepository);
+
+  const getEventsUseCase = new GetEventsUseCase(eventRepository);
+  const getEventUseCase = new GetEventUseCase(eventRepository);
+  // const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, eventsVenueRepository, ticketCreator) - add after ticket wiring
+  const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventsVenueRepository);
+  const cancelEventUseCase = new CancelEventUseCase(eventRepository);
+  const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
+
+  // const ticketCreator = new TicketCreatorAdapter() - add after ticket wiring
+
+  // Fastify
   const app = Fastify({ logger: true });
 
   registerExceptionHandlers(app);
