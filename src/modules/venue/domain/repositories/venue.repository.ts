@@ -5,4 +5,5 @@ export interface VenueRepository {
   findByAddress(address: string): Promise<Venue | null>;
   findAll(): Promise<Venue[]>;
   findById(id: string): Promise<Venue | null>;
+  delete(id: string): Promise<void>;
 }
