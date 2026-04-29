@@ -1,4 +1,4 @@
-import { TicketType } from "../enums/ticket-type.enum";
+import { TicketType } from "../value-objects/ticket-type.enum";
 import { DomainError } from "../../../../shared/domain/errors/domain.error";
 
 export interface TicketProps {

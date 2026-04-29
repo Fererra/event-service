@@ -1,5 +1,5 @@
 import { TicketFactory } from "../../domain/factories/ticket.factory";
-import { TicketType } from "../../domain/enums/ticket-type.enum";
+import { TicketType } from "../../domain/value-objects/ticket-type.enum";
 import { ITicketRepository } from "../../domain/repositories/ticket.repository.interface";
 import { IEventLookupRepository } from "../../domain/repositories/event-lookup.repository.interface";
 import { NotFoundError, DomainError } from "../../../../shared/domain/errors/domain.error";

@@ -1,4 +1,4 @@
-import { TicketType } from "../../domain/enums/ticket-type.enum";
+import { TicketType } from "../../domain/value-objects/ticket-type.enum";
 
 export interface CreateTicketDto {
   type: TicketType;

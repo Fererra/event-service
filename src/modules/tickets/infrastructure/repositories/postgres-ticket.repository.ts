@@ -1,6 +1,6 @@
 import { Repository } from "typeorm";
 import { Ticket } from "../../domain/entities/ticket.entity";
-import { TicketType } from "../../domain/enums/ticket-type.enum";
+import { TicketType } from "../../domain/value-objects/ticket-type.enum";
 import { ITicketRepository } from "../../domain/repositories/ticket.repository.interface";
 import { TicketOrmEntity } from "../orm/entities/ticket.orm-entity";
 import { TicketMapper } from "../orm/mappers/ticket.mapper";

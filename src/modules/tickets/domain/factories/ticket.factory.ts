@@ -1,5 +1,5 @@
 import { Ticket } from "../entities/ticket.entity";
-import { TicketType } from "../enums/ticket-type.enum";
+import { TicketType } from "../value-objects/ticket-type.enum";
 import { DomainError } from "../../../../shared/domain/errors/domain.error";
 import { ITicketRepository } from "../repositories/ticket.repository.interface";
 import { IVenueRepository } from "../repositories/venue.repository.interface";

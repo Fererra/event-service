@@ -1,5 +1,5 @@
 import { EventStatus } from "../../domain/value-objects/event-status.enum";
-import { TicketType } from "../../../tickets/domain/enums/ticket-type.enum";
+import { TicketType } from "../../../tickets/domain/value-objects/ticket-type.enum";
 
 export interface CreateTicketInlineDto {
   type: TicketType;

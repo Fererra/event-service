@@ -3,7 +3,7 @@ import {
   ITicketCreator,
 } from "../../domain/repositories/ticket-creator.interface";
 import { CreateTicketUseCase } from "../../../tickets/application/commands/create-ticket.use-case";
-import { TicketType } from "../../../tickets/domain/enums/ticket-type.enum";
+import { TicketType } from "../../../tickets/domain/value-objects/ticket-type.enum";
 import { DomainError } from "../../../../shared/domain/errors/domain.error";
 
 export class TicketCreatorAdapter implements ITicketCreator {

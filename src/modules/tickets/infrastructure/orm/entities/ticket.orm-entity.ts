@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from "typeorm";
-import { TicketType } from "../../../domain/enums/ticket-type.enum";
+import { TicketType } from "../../../domain/value-objects/ticket-type.enum";
 
 @Entity("tickets")
 export class TicketOrmEntity {

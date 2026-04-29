@@ -1,5 +1,5 @@
 import { Ticket } from "../entities/ticket.entity";
-import { TicketType } from "../enums/ticket-type.enum";
+import { TicketType } from "../value-objects/ticket-type.enum";
 
 export interface ITicketRepository {
   findByEventId(eventId: number): Promise<Ticket[]>;
