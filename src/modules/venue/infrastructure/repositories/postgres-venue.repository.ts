@@ -26,4 +26,8 @@ export class PostgresVenueRepository implements VenueRepository {
     const ormEntity = await this.ormRepository.findOne({ where: { id } });
     return ormEntity ? VenueMapper.toDomain(ormEntity) : null;
   }
+
+  async delete(id: string): Promise<void> {
+    await this.ormRepository.delete(id);
+  }
 }
