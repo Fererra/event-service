@@ -15,3 +15,19 @@ export interface CreateVenueDto {
   capacity: number | null;
   address: string;
 }
+
+export const GetVenueByIdSchema = {
+  params: {
+    type: "object",
+    required: ["venueId"],
+    properties: {
+      venueId: { type: "string", format: "uuid" },
+    },
+  },
+};
+
+export type GetVenueByIdDto = {
+  Params: {
+    venueId: string;
+  };
+};
