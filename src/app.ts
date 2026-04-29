@@ -17,6 +17,7 @@ import { venueRoutes } from "./modules/venue/presentation/controllers/venue.cont
 import { CreateVenueUseCase } from "./modules/venue/application/use-cases/create-venue.use-case";
 import { GetAllVenuesUseCase } from "./modules/venue/application/use-cases/get-venues.use-case";
 import { GetVenueByIdUseCase } from "./modules/venue/application/use-cases/get-venue-by-id.use-case";
+import { UpdateVenueUseCase } from "./modules/venue/application/use-cases/update-venue.use-case";
 import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
 import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
 
@@ -78,6 +79,7 @@ async function bootstrap() {
   const createVenueUseCase = new CreateVenueUseCase(venueRepository);
   const getAllVenuesUseCase = new GetAllVenuesUseCase(venueRepository);
   const getVenueByIdUseCase = new GetVenueByIdUseCase(venueRepository);
+  const updateVenueUseCase = new UpdateVenueUseCase(venueRepository);
 
   const app = Fastify({ logger: true });
 
@@ -86,6 +88,7 @@ async function bootstrap() {
     createVenueUseCase,
     getAllVenuesUseCase,
     getVenueByIdUseCase,
+    updateVenueUseCase,
     tokenService,
   );
 
