@@ -16,4 +16,14 @@ export class PostgresVenueRepository implements VenueRepository {
     const ormEntity = await this.ormRepository.findOne({ where: { address } });
     return ormEntity ? VenueMapper.toDomain(ormEntity) : null;
   }
+
+  async findAll(): Promise<Venue[]> {
+    const ormEntities = await this.ormRepository.find();
+    return ormEntities.map(VenueMapper.toDomain);
+  }
+
+  async findById(id: string): Promise<Venue | null> {
+    const ormEntity = await this.ormRepository.findOne({ where: { id } });
+    return ormEntity ? VenueMapper.toDomain(ormEntity) : null;
+  }
 }
