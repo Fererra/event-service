@@ -30,6 +30,19 @@ import { CreateEventUseCase } from "./modules/events/application/commands/create
 import { DeleteEventUseCase } from "./modules/events/application/commands/delete-event.use-case";
 import { registerEventRoutes } from "./modules/events/presentation/controllers/event.controller";
 
+// Tickets imports
+import { TicketOrmEntity } from "./modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
+import { PostgresRegistrationCountRepository } from "./modules/tickets/infrastructure/repositories/postgres-registration-count.repository";
+import { PostgresTicketRepository } from "./modules/tickets/infrastructure/repositories/postgres-ticket.repository";
+import { PostgresVenueRepository as TicketsVenueRepository } from "./modules/events/infrastructure/repositories/postgres-venue.repository";
+import { EventLookupAdapter } from "./modules/tickets/infrastructure/adapters/event-lookup.adapter";
+import { TicketFactory } from "./modules/tickets/domain/factories/ticket.factory";
+import { GetEventTicketsUseCase } from "./modules/tickets/application/queries/get-event-tickets.use-case";
+import { CreateTicketUseCase } from "./modules/tickets/application/commands/create-ticket.use-case";
+import { UpdateTicketUseCase } from "./modules/tickets/application/commands/update-ticket.use-case";
+import { DeleteTicketUseCase } from "./modules/tickets/application/commands/delete-ticket.use-case";
+import { registerTicketRoutes } from "./modules/tickets/presentation/controllers/ticket.controller";
+
 async function bootstrap() {
   const config = {
     port: Number(process.env.PORT) || 3000,
@@ -94,6 +107,32 @@ async function bootstrap() {
 
   // const ticketCreator = new TicketCreatorAdapter() - add after ticket wiring
 
+  // Tickets
+  const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
+  const ticketsVenueRepository = new TicketsVenueRepository(dataSource);
+  const registrationCountRepository = new PostgresRegistrationCountRepository(dataSource);
+  const eventLookupAdapter = new EventLookupAdapter(getEventUseCase);
+
+  const ticketFactory = new TicketFactory(ticketRepository, ticketsVenueRepository);
+
+  const getEventTicketsUseCase = new GetEventTicketsUseCase(ticketRepository, eventLookupAdapter);
+  const createTicketUseCase = new CreateTicketUseCase(
+    ticketFactory,
+    ticketRepository,
+    eventLookupAdapter,
+  );
+  const updateTicketUseCase = new UpdateTicketUseCase(
+    ticketRepository,
+    eventLookupAdapter,
+    ticketsVenueRepository,
+    registrationCountRepository,
+  );
+  const deleteTicketUseCase = new DeleteTicketUseCase(
+    ticketRepository,
+    eventLookupAdapter,
+    registrationCountRepository,
+  );
+
   // Fastify
   const app = Fastify({ logger: true });
 
@@ -105,6 +144,17 @@ async function bootstrap() {
     logoutUseCase,
     refreshTokensUseCase,
   });
+
+  registerTicketRoutes(
+    app,
+    {
+      getEventTicketsUseCase,
+      createTicketUseCase,
+      updateTicketUseCase,
+      deleteTicketUseCase,
+    },
+    tokenService,
+  );
 
   await app.listen({ port: config.port, host: "0.0.0.0" });
   console.log(`Server running on port ${config.port}`);
