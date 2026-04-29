@@ -31,3 +31,33 @@ export type GetVenueByIdDto = {
     venueId: string;
   };
 };
+
+export const UpdateVenueSchema = {
+  params: {
+    type: "object",
+    required: ["venueId"],
+    properties: {
+      venueId: { type: "string", format: "uuid" },
+    },
+  },
+  body: {
+    type: "object",
+    properties: {
+      name: { type: "string", minLength: 1 },
+      capacity: { type: "number", minimum: 1, nullable: true },
+      address: { type: "string", minLength: 1 },
+    },
+    additionalProperties: false,
+  },
+};
+
+export type UpdateVenueDto = {
+  Params: {
+    venueId: string;
+  };
+  Body: {
+    name?: string;
+    capacity?: number | null;
+    address?: string;
+  };
+};

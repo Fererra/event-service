@@ -92,4 +92,38 @@ export function venueRoutes(
       }
     },
   );
+
+  fastify.patch<{
+    Params: UpdateVenueDto["Params"];
+    Body: UpdateVenueDto["Body"];
+  }>(
+    "/venues/:venueId",
+    {
+      schema: UpdateVenueSchema,
+      preHandler: [jwtGuard, adminGuard],
+    },
+    async (request, reply) => {
+      try {
+        const command: UpdateVenueCommand = {
+          id: request.params.venueId,
+          name: request.body.name,
+          capacity: request.body.capacity,
+          address: request.body.address,
+        };
+
+        await updateVenueUseCase.execute(command);
+
+        return reply.code(204).send();
+      } catch (error: any) {
+        if (error.message === "Venue not found") {
+          return reply.code(404).send({ error: error.message });
+        }
+        if (error.name === "DomainError") {
+          return reply.code(400).send({ error: error.message });
+        }
+        fastify.log.error(error);
+        return reply.code(500).send({ error: "Internal Server Error" });
+      }
+    },
+  );
 }
