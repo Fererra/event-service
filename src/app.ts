@@ -151,6 +151,19 @@ async function bootstrap() {
     refreshTokensUseCase,
   });
 
+  registerEventRoutes(
+    app,
+    {
+      getEventsUseCase,
+      getEventUseCase,
+      createEventUseCase,
+      updateEventUseCase,
+      cancelEventUseCase,
+      deleteEventUseCase,
+    },
+    tokenService,
+  );
+
   registerTicketRoutes(
     app,
     {
