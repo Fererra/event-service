@@ -1,5 +1,5 @@
 import { ITicketRepository } from "../../domain/repositories/ticket.repository.interface";
-import { IEventRepository } from "../../../events/domain/repositories/event.repository.interface";
+import { IEventLookupRepository } from "../../domain/repositories/event-lookup.repository.interface";
 import { IVenueRepository } from "../../domain/repositories/venue.repository.interface";
 import { IRegistrationCountRepository } from "../../domain/repositories/registration-count.repository.interface";
 import { NotFoundError, DomainError } from "../../../../shared/domain/errors/domain.error";
@@ -14,7 +14,7 @@ export interface UpdateTicketCommand {
 export class UpdateTicketUseCase {
   constructor(
     private readonly ticketRepository: ITicketRepository,
-    private readonly eventLookupRepository: IEventRepository,
+    private readonly eventLookupRepository: IEventLookupRepository,
     private readonly venueRepository: IVenueRepository,
     private readonly registrationCountRepository: IRegistrationCountRepository,
   ) {}
