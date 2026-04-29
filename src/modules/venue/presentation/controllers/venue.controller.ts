@@ -6,12 +6,20 @@ import {
 import { GetAllVenuesUseCase } from "../../application/use-cases/get-venues.use-case";
 import { GetVenueByIdUseCase } from "../../application/use-cases/get-venue-by-id.use-case";
 import {
+  UpdateVenueUseCase,
+  UpdateVenueCommand,
+} from "../../application/use-cases/update-venue.use-case";
+import {
   CreateVenueSchema,
   CreateVenueDto,
   GetVenueByIdSchema,
   GetVenueByIdDto,
+  UpdateVenueSchema,
+  UpdateVenueDto,
 } from "../dto/venue.dto";
 import { createAdminGuard } from "../../../auth/presentation/guards/admin.guard";
+import { createJwtGuard } from "../../../auth/presentation/guards/jwt.guard";
+
 import { JwtTokenService } from "../../../auth/infrastructure/services/jwt-token.service";
 
 export function venueRoutes(
@@ -19,30 +27,17 @@ export function venueRoutes(
   createVenueUseCase: CreateVenueUseCase,
   getAllVenuesUseCase: GetAllVenuesUseCase,
   getVenueByIdUseCase: GetVenueByIdUseCase,
+  updateVenueUseCase: UpdateVenueUseCase,
   tokenService: JwtTokenService,
 ) {
   const adminGuard = createAdminGuard();
-
-  const authenticate = async (request: FastifyRequest, reply: FastifyReply) => {
-    const authHeader = request.headers.authorization;
-    if (!authHeader) {
-      return reply.code(401).send({ error: "Missing authorization header" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    try {
-      const payload = tokenService.verifyAccessToken(token);
-      (request as any).user = payload;
-    } catch (err) {
-      return reply.code(401).send({ error: "Invalid or expired token" });
-    }
-  };
+  const jwtGuard = createJwtGuard(tokenService);
 
   fastify.post<{ Body: CreateVenueDto }>(
     "/venues",
     {
       schema: CreateVenueSchema,
-      preHandler: [authenticate, adminGuard],
+      preHandler: [jwtGuard, adminGuard],
     },
     async (request, reply) => {
       try {
@@ -66,7 +61,7 @@ export function venueRoutes(
 
   fastify.get(
     "/venues",
-    { preHandler: [authenticate, adminGuard] },
+    { preHandler: [jwtGuard, adminGuard] },
     async (request, reply) => {
       try {
         const venues = await getAllVenuesUseCase.execute();
@@ -82,7 +77,7 @@ export function venueRoutes(
     "/venues/:venueId",
     {
       schema: GetVenueByIdSchema,
-      preHandler: [authenticate, adminGuard],
+      preHandler: [jwtGuard, adminGuard],
     },
     async (request, reply) => {
       try {
