@@ -100,12 +100,9 @@ async function bootstrap() {
 
   const getEventsUseCase = new GetEventsUseCase(eventRepository);
   const getEventUseCase = new GetEventUseCase(eventRepository);
-  // const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, eventsVenueRepository, ticketCreator) - add after ticket wiring
   const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventsVenueRepository);
   const cancelEventUseCase = new CancelEventUseCase(eventRepository);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
-
-  // const ticketCreator = new TicketCreatorAdapter() - add after ticket wiring
 
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
@@ -131,6 +128,15 @@ async function bootstrap() {
     ticketRepository,
     eventLookupAdapter,
     registrationCountRepository,
+  );
+
+  // Events create use case
+  const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
+  const createEventUseCase = new CreateEventUseCase(
+    eventFactory,
+    eventRepository,
+    eventsVenueRepository,
+    ticketCreator,
   );
 
   // Fastify
