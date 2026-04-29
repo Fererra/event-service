@@ -18,6 +18,8 @@ import { CreateVenueUseCase } from "./modules/venue/application/use-cases/create
 import { GetAllVenuesUseCase } from "./modules/venue/application/use-cases/get-venues.use-case";
 import { GetVenueByIdUseCase } from "./modules/venue/application/use-cases/get-venue-by-id.use-case";
 import { UpdateVenueUseCase } from "./modules/venue/application/use-cases/update-venue.use-case";
+import { DeleteVenueUseCase } from "./modules/venue/application/use-cases/delete-venue.use-case";
+import { VenueEventChecker } from "./modules/venue/application/ports/venue-event-checker.service";
 import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
 import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
 
@@ -81,6 +83,18 @@ async function bootstrap() {
   const getVenueByIdUseCase = new GetVenueByIdUseCase(venueRepository);
   const updateVenueUseCase = new UpdateVenueUseCase(venueRepository);
 
+  const mockEventChecker: VenueEventChecker = {
+    hasAnyEvents: async (venueId: string) => {
+      // todo: add logic when the event is done and merged
+      return false;
+    },
+  };
+
+  const deleteVenueUseCase = new DeleteVenueUseCase(
+    venueRepository,
+    mockEventChecker,
+  );
+
   const app = Fastify({ logger: true });
 
   venueRoutes(
@@ -89,6 +103,7 @@ async function bootstrap() {
     getAllVenuesUseCase,
     getVenueByIdUseCase,
     updateVenueUseCase,
+    deleteVenueUseCase,
     tokenService,
   );
 
