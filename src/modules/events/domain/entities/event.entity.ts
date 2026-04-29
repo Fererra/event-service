@@ -91,6 +91,19 @@ export class Event {
     this._status = EventStatus.CANCELLED;
   }
 
+  publish(): void {
+    if (this._status !== EventStatus.IN_PLANNING) {
+      throw new DomainError(`Cannot publish the event that is ${this._status}`);
+    }
+    this._status = EventStatus.ACTIVE;
+  }
+
+  finish(): void {
+    if (this._status !== EventStatus.ACTIVE) {
+      throw new DomainError(`Cannot finish the event that is ${this._status}`);
+    }
+  }
+
   update(data: UpdateEventData): void {
     if (data.startTimestamp !== undefined || data.endTimestamp !== undefined) {
       const newStart = data.startTimestamp ?? this._period.startDate;

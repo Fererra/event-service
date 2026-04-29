@@ -29,6 +29,8 @@ import { CancelEventUseCase } from "./modules/events/application/commands/cancel
 import { CreateEventUseCase } from "./modules/events/application/commands/create-event.use-case";
 import { DeleteEventUseCase } from "./modules/events/application/commands/delete-event.use-case";
 import { registerEventRoutes } from "./modules/events/presentation/controllers/event.controller";
+import { SyncEventStatusesUSeCase } from "./modules/events/application/commands/sync-event-statuses.use-case";
+import { EventCronJobs } from "./modules/events/presentation/cron/event.cron";
 
 // Tickets imports
 import { TicketOrmEntity } from "./modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
@@ -103,6 +105,7 @@ async function bootstrap() {
   const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventsVenueRepository);
   const cancelEventUseCase = new CancelEventUseCase(eventRepository);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
+  const syncEventStatusesUSeCase = new SyncEventStatusesUSeCase(eventRepository);
 
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
@@ -138,6 +141,10 @@ async function bootstrap() {
     eventsVenueRepository,
     ticketCreator,
   );
+
+  // Cron Job
+  const eventCronJobs = new EventCronJobs(syncEventStatusesUSeCase);
+  eventCronJobs.start();
 
   // Fastify
   const app = Fastify({ logger: true });
