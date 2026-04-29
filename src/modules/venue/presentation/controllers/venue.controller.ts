@@ -5,6 +5,7 @@ import {
 } from "../../application/use-cases/create-venue.use-case";
 import { GetAllVenuesUseCase } from "../../application/use-cases/get-venues.use-case";
 import { GetVenueByIdUseCase } from "../../application/use-cases/get-venue-by-id.use-case";
+import { DeleteVenueUseCase } from "../../application/use-cases/delete-venue.use-case";
 import {
   UpdateVenueUseCase,
   UpdateVenueCommand,
@@ -16,6 +17,8 @@ import {
   GetVenueByIdDto,
   UpdateVenueSchema,
   UpdateVenueDto,
+  DeleteVenueSchema,
+  DeleteVenueDto,
 } from "../dto/venue.dto";
 import { createAdminGuard } from "../../../auth/presentation/guards/admin.guard";
 import { createJwtGuard } from "../../../auth/presentation/guards/jwt.guard";
@@ -28,6 +31,7 @@ export function venueRoutes(
   getAllVenuesUseCase: GetAllVenuesUseCase,
   getVenueByIdUseCase: GetVenueByIdUseCase,
   updateVenueUseCase: UpdateVenueUseCase,
+  deleteVenueUseCase: DeleteVenueUseCase,
   tokenService: JwtTokenService,
 ) {
   const adminGuard = createAdminGuard();
@@ -113,6 +117,29 @@ export function venueRoutes(
 
         await updateVenueUseCase.execute(command);
 
+        return reply.code(204).send();
+      } catch (error: any) {
+        if (error.message === "Venue not found") {
+          return reply.code(404).send({ error: error.message });
+        }
+        if (error.name === "DomainError") {
+          return reply.code(400).send({ error: error.message });
+        }
+        fastify.log.error(error);
+        return reply.code(500).send({ error: "Internal Server Error" });
+      }
+    },
+  );
+
+  fastify.delete<{ Params: DeleteVenueDto["Params"] }>(
+    "/venues/:venueId",
+    {
+      schema: DeleteVenueSchema,
+      preHandler: [jwtGuard, adminGuard],
+    },
+    async (request, reply) => {
+      try {
+        await deleteVenueUseCase.execute(request.params.venueId);
         return reply.code(204).send();
       } catch (error: any) {
         if (error.message === "Venue not found") {

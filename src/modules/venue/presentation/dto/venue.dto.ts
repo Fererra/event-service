@@ -61,3 +61,19 @@ export type UpdateVenueDto = {
     address?: string;
   };
 };
+
+export const DeleteVenueSchema = {
+  params: {
+    type: "object",
+    required: ["venueId"],
+    properties: {
+      venueId: { type: "string", format: "uuid" },
+    },
+  },
+};
+
+export type DeleteVenueDto = {
+  Params: {
+    venueId: string;
+  };
+};
