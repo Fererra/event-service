@@ -49,8 +49,5 @@ CREATE TABLE IF NOT EXISTS venues (
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id    ON refresh_tokens(user_id);
 
-<<<<<<< HEAD
 CREATE INDEX IF NOT EXISTS idx_events_owner_id ON events(owner_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_event_id ON tickets(event_id);
-=======
->>>>>>> dev
