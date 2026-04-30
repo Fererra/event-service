@@ -66,7 +66,7 @@ export function registerEventRoutes(
 
   app.get<{ Params: { eventId: string } }>("/events/:eventId", async (req, reply) => {
     const event = await getEventUseCase.execute(Number(req.params.eventId));
-    reply.send(toEventResponse);
+    reply.send(toEventResponse(event));
   });
 
   app.post<{ Body: CreateEventDto }>(
@@ -74,7 +74,7 @@ export function registerEventRoutes(
     { preHandler: adminOnly, schema: createEventSchema },
     async (req, reply) => {
       const user = (req as any).user;
-      const eventId = await createEventUseCase.execute({
+      const event = await createEventUseCase.execute({
         ownerId: user.id,
         name: req.body.name,
         organisator: req.body.organisator,
@@ -84,7 +84,7 @@ export function registerEventRoutes(
         venueId: req.body.venue_id,
         tickets: req.body.tickets,
       });
-      reply.status(201).send({ id: eventId });
+      reply.status(201).send({ event });
     },
   );
 
