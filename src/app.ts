@@ -25,6 +25,7 @@ import { UpdateVenueUseCase } from "./modules/venue/application/use-cases/update
 import { DeleteVenueUseCase } from "./modules/venue/application/use-cases/delete-venue.use-case";
 import { VenueEventChecker } from "./modules/venue/application/ports/venue-event-checker.service";
 import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
+import { TypeOrmVenueEventChecker } from "./modules/venue/infrastructure/repositories/venue-event-checker";
 import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
 
 // Events imports
@@ -67,8 +68,10 @@ async function bootstrap() {
       database: process.env.DB_NAME || "auth_db",
     },
     jwt: {
-      accessSecret: process.env.JWT_ACCESS_SECRET || "access-secret-change-in-prod",
-      refreshSecret: process.env.JWT_REFRESH_SECRET || "refresh-secret-change-in-prod",
+      accessSecret:
+        process.env.JWT_ACCESS_SECRET || "access-secret-change-in-prod",
+      refreshSecret:
+        process.env.JWT_REFRESH_SECRET || "refresh-secret-change-in-prod",
       accessExpiresIn: process.env.JWT_ACCESS_EXPIRES_IN || "15m",
       refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || "7d",
     },
@@ -78,7 +81,9 @@ async function bootstrap() {
   await dataSource.initialize();
 
   // Auth
-  const userRepository = new PostgresUserRepository(dataSource.getRepository(UserOrmEntity));
+  const userRepository = new PostgresUserRepository(
+    dataSource.getRepository(UserOrmEntity),
+  );
   const refreshTokenRepository = new PostgresRefreshTokenRepository(
     dataSource.getRepository(RefreshTokenOrmEntity),
   );
@@ -106,43 +111,58 @@ async function bootstrap() {
   );
 
   // Venues
-  const venueRepository = new PostgresVenueRepository(dataSource.getRepository(VenueOrmEntity));
+  const venueRepository = new PostgresVenueRepository(
+    dataSource.getRepository(VenueOrmEntity),
+  );
   const createVenueUseCase = new CreateVenueUseCase(venueRepository);
   const getAllVenuesUseCase = new GetAllVenuesUseCase(venueRepository);
   const getVenueByIdUseCase = new GetVenueByIdUseCase(venueRepository);
   const updateVenueUseCase = new UpdateVenueUseCase(venueRepository);
 
-  const mockEventChecker: VenueEventChecker = {
-    hasAnyEvents: async (venueId: string) => {
-      // todo: add logic when the event is done and merged
-      return false;
-    },
-  };
+  const eventOrmRepo = dataSource.getRepository(EventOrmEntity);
+  const realEventChecker = new TypeOrmVenueEventChecker(eventOrmRepo);
 
-  const deleteVenueUseCase = new DeleteVenueUseCase(venueRepository, mockEventChecker);
+  const deleteVenueUseCase = new DeleteVenueUseCase(
+    venueRepository,
+    realEventChecker,
+  );
 
   // Events
-  const eventRepository = new PostgresEventRepository(dataSource.getRepository(EventOrmEntity));
+  const eventRepository = new PostgresEventRepository(
+    dataSource.getRepository(EventOrmEntity),
+  );
   const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdUseCase);
 
   const eventFactory = new EventFactory(eventVenueAdapter);
 
   const getEventsUseCase = new GetEventsUseCase(eventRepository);
   const getEventUseCase = new GetEventUseCase(eventRepository);
-  const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventVenueAdapter);
+  const updateEventUseCase = new UpdateEventUseCase(
+    eventRepository,
+    eventVenueAdapter,
+  );
   const cancelEventUseCase = new CancelEventUseCase(eventRepository);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
-  const syncEventStatusesUSeCase = new SyncEventStatusesUSeCase(eventRepository);
+  const syncEventStatusesUSeCase = new SyncEventStatusesUSeCase(
+    eventRepository,
+  );
 
   // Tickets
-  const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
+  const ticketRepository = new PostgresTicketRepository(
+    dataSource.getRepository(TicketOrmEntity),
+  );
   const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdUseCase);
-  const registrationCountRepository = new PostgresRegistrationCountRepository(dataSource);
+  const registrationCountRepository = new PostgresRegistrationCountRepository(
+    dataSource,
+  );
   const eventLookupAdapter = new EventLookupAdapter(getEventUseCase);
 
   const ticketFactory = new TicketFactory(ticketRepository, ticketVenueAdapter);
 
-  const getEventTicketsUseCase = new GetEventTicketsUseCase(ticketRepository, eventLookupAdapter);
+  const getEventTicketsUseCase = new GetEventTicketsUseCase(
+    ticketRepository,
+    eventLookupAdapter,
+  );
   const createTicketUseCase = new CreateTicketUseCase(
     ticketFactory,
     ticketRepository,
