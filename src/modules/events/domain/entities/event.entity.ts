@@ -9,7 +9,7 @@ export interface UpdateEventData {
   startTimestamp?: Date;
   endTimestamp?: Date;
   status?: EventStatus;
-  venueId?: number;
+  venueId?: string;
 }
 
 export interface EventProps {
@@ -20,7 +20,7 @@ export interface EventProps {
   description: string;
   period: EventPeriod;
   status: EventStatus;
-  venueId: number;
+  venueId: string;
   createdAt: Date;
 }
 
@@ -32,7 +32,7 @@ export class Event {
   private _description: string;
   private _period: EventPeriod;
   private _status: EventStatus;
-  private _venueId: number;
+  private _venueId: string;
   private readonly _createdAt: Date;
 
   constructor(props: EventProps) {
@@ -74,7 +74,7 @@ export class Event {
   get status(): EventStatus {
     return this._status;
   }
-  get venueId(): number {
+  get venueId(): string {
     return this._venueId;
   }
   get createdAt(): Date {
@@ -89,6 +89,22 @@ export class Event {
       throw new DomainError("Cannot cancel a finished event");
     }
     this._status = EventStatus.CANCELLED;
+  }
+
+  publish(): void {
+    if (this._status !== EventStatus.IN_PLANNING) {
+      throw new DomainError(`Cannot publish the event that is ${this._status}`);
+    }
+    this._status = EventStatus.ACTIVE;
+  }
+
+  finish(): void {
+    const allowedStatuses = [EventStatus.ACTIVE, EventStatus.IN_PLANNING];
+
+    if (!allowedStatuses.includes(this._status)) {
+      throw new DomainError(`Cannot finish the event that is ${this._status}`);
+    }
+    this._status = EventStatus.FINISHED;
   }
 
   update(data: UpdateEventData): void {

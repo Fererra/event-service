@@ -6,6 +6,7 @@ import {
   InlineTicketData,
 } from "../../domain/repositories/ticket-creator.interface";
 import { DomainError } from "../../../../shared/domain/errors/domain.error";
+import { Event } from "../../domain/entities/event.entity";
 
 export interface CreateEventCommand {
   ownerId: string;
@@ -14,7 +15,7 @@ export interface CreateEventCommand {
   description: string;
   startTimestamp: Date;
   endTimestamp: Date;
-  venueId: number;
+  venueId: string;
   tickets?: InlineTicketData[];
 }
 
@@ -26,12 +27,10 @@ export class CreateEventUseCase {
     private readonly ticketCreator: ITicketCreator,
   ) {}
 
-  async execute(command: CreateEventCommand): Promise<number> {
+  async execute(command: CreateEventCommand): Promise<Event> {
     if (command.tickets && command.tickets.length > 0) {
       if (command.tickets.length > 3) {
-        throw new DomainError(
-          "Cannot create more than 3 ticket types for an event",
-        );
+        throw new DomainError("Cannot create more than 3 ticket types for an event");
       }
       const types = command.tickets.map((t) => t.type);
       if (new Set(types).size !== types.length) {
@@ -52,11 +51,8 @@ export class CreateEventUseCase {
           );
         }
       }
-      await this.ticketCreator.createTicketsForEvent(
-        savedEvent.id,
-        command.tickets,
-      );
+      await this.ticketCreator.createTicketsForEvent(savedEvent.id, command.tickets);
     }
-    return savedEvent.id;
+    return savedEvent;
   }
 }
