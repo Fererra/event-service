@@ -1,8 +1,8 @@
 export interface VenueData {
-  id: number;
+  id: string;
   capacity: number | null;
 }
 
 export interface IVenueRepository {
-  findById(id: number): Promise<VenueData | null>;
+  findById(id: string): Promise<VenueData | null>;
 }

@@ -11,7 +11,7 @@ export interface CreateEventData {
   description: string;
   startTimestamp: Date;
   endTimestamp: Date;
-  venueId: number;
+  venueId: string;
 }
 
 export class EventFactory {

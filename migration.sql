@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS events (
     start_timestamp TIMESTAMP NOT NULL,
     end_timestamp   TIMESTAMP NOT NULL,
     organisator     VARCHAR(255) NOT NULL,
-    venue_id        INTEGER NOT NULL,
+    venue_id        UUID NOT NULL REFERENCES venues(id) ON DELETE CASCADE,
     status          VARCHAR(50) NOT NULL DEFAULT 'IN_PLANNING',
     created_at      TIMESTAMP NOT NULL DEFAULT NOW()
 );

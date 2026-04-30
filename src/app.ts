@@ -30,7 +30,7 @@ import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venu
 // Events imports
 import { EventOrmEntity } from "./modules/events/infrastructure/orm/entities/event.orm-entity";
 import { PostgresEventRepository } from "./modules/events/infrastructure/repositories/postgres-event.repository";
-import { PostgresVenueRepository as EventsVenueRepository } from "./modules/events/infrastructure/repositories/postgres-venue.repository";
+import { VenueModuleAdapter as EventVenueModuleAdapter } from "./modules/events/infrastructure/adapters/venue-module.adapter";
 import { TicketCreatorAdapter } from "./modules/events/infrastructure/adapters/ticket-creator.adapter";
 import { EventFactory } from "./modules/events/domain/factories/event.factory";
 import { GetEventUseCase } from "./modules/events/application/queries/get-event.use.case";
@@ -47,7 +47,7 @@ import { EventCronJobs } from "./modules/events/presentation/cron/event.cron";
 import { TicketOrmEntity } from "./modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
 import { PostgresRegistrationCountRepository } from "./modules/tickets/infrastructure/repositories/postgres-registration-count.repository";
 import { PostgresTicketRepository } from "./modules/tickets/infrastructure/repositories/postgres-ticket.repository";
-import { PostgresVenueRepository as TicketsVenueRepository } from "./modules/events/infrastructure/repositories/postgres-venue.repository";
+import { VenueModuleAdapter as TicketVenueModuleAdapter } from "./modules/tickets/infrastructure/adapters/venue-module.adapter";
 import { EventLookupAdapter } from "./modules/tickets/infrastructure/adapters/event-lookup.adapter";
 import { TicketFactory } from "./modules/tickets/domain/factories/ticket.factory";
 import { GetEventTicketsUseCase } from "./modules/tickets/application/queries/get-event-tickets.use-case";
@@ -123,24 +123,24 @@ async function bootstrap() {
 
   // Events
   const eventRepository = new PostgresEventRepository(dataSource.getRepository(EventOrmEntity));
-  const eventsVenueRepository = new EventsVenueRepository(dataSource);
+  const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdUseCase);
 
-  const eventFactory = new EventFactory(eventsVenueRepository);
+  const eventFactory = new EventFactory(eventVenueAdapter);
 
   const getEventsUseCase = new GetEventsUseCase(eventRepository);
   const getEventUseCase = new GetEventUseCase(eventRepository);
-  const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventsVenueRepository);
+  const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventVenueAdapter);
   const cancelEventUseCase = new CancelEventUseCase(eventRepository);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
   const syncEventStatusesUSeCase = new SyncEventStatusesUSeCase(eventRepository);
 
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
-  const ticketsVenueRepository = new TicketsVenueRepository(dataSource);
+  const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdUseCase);
   const registrationCountRepository = new PostgresRegistrationCountRepository(dataSource);
   const eventLookupAdapter = new EventLookupAdapter(getEventUseCase);
 
-  const ticketFactory = new TicketFactory(ticketRepository, ticketsVenueRepository);
+  const ticketFactory = new TicketFactory(ticketRepository, ticketVenueAdapter);
 
   const getEventTicketsUseCase = new GetEventTicketsUseCase(ticketRepository, eventLookupAdapter);
   const createTicketUseCase = new CreateTicketUseCase(
@@ -151,7 +151,7 @@ async function bootstrap() {
   const updateTicketUseCase = new UpdateTicketUseCase(
     ticketRepository,
     eventLookupAdapter,
-    ticketsVenueRepository,
+    ticketVenueAdapter,
     registrationCountRepository,
   );
   const deleteTicketUseCase = new DeleteTicketUseCase(
@@ -165,7 +165,7 @@ async function bootstrap() {
   const createEventUseCase = new CreateEventUseCase(
     eventFactory,
     eventRepository,
-    eventsVenueRepository,
+    eventVenueAdapter,
     ticketCreator,
   );
 

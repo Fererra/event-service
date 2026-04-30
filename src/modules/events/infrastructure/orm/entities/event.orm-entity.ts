@@ -27,8 +27,8 @@ export class EventOrmEntity {
   @Column({ type: "enum", enum: EventStatus, default: EventStatus.IN_PLANNING })
   status!: EventStatus;
 
-  @Column({ name: "venue_id", type: "int" })
-  venueId!: number;
+  @Column({ name: "venue_id", type: "varchar" })
+  venueId!: string;
 
   @Column({ name: "created_at", type: "timestamptz" })
   createdAt!: Date;

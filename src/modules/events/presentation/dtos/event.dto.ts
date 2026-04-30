@@ -13,7 +13,7 @@ export interface CreateEventDto {
   description: string;
   start_timestamp: string;
   end_timestamp: string;
-  venue_id: number;
+  venue_id: string;
   tickets?: CreateTicketInlineDto[];
 }
 
@@ -24,7 +24,7 @@ export interface UpdateEventDto {
   start_timestamp?: string;
   end_timestamp?: string;
   status?: EventStatus;
-  venue_id?: number;
+  venue_id?: string;
 }
 
 export interface EventResponseDto {
@@ -36,7 +36,7 @@ export interface EventResponseDto {
   start_timestamp: string;
   end_timestamp: string;
   status: EventStatus;
-  venue_id: number;
+  venue_id: string;
   created_at: string;
 }
 
@@ -67,7 +67,7 @@ export const createEventSchema = {
       description: { type: "string" },
       start_timestamp: { type: "string", format: "date-time" },
       end_timestamp: { type: "string", format: "date-time" },
-      venue_id: { type: "integer", minimum: 1 },
+      venue_id: { type: "string", minimum: 1 },
       tickets: {
         type: "array",
         items: ticketInlineSchema,
@@ -86,7 +86,7 @@ export const updateEventSchema = {
       start_timestamp: { type: "string", format: "date-time" },
       end_timestamp: { type: "string", format: "date-time" },
       status: { type: "string", enum: Object.values(EventStatus) },
-      venue_id: { type: "integer", minimum: 1 },
+      venue_id: { type: "string", minimum: 1 },
     },
   },
 } as const;

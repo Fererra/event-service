@@ -8,7 +8,7 @@ const MAX_TICKET_TYPES = 3;
 
 export interface CreateTicketData {
   eventId: number;
-  venueId: number;
+  venueId: string;
   type: TicketType;
   limit: number;
   price: number;

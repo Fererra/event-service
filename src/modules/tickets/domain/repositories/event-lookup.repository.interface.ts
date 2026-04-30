@@ -1,6 +1,6 @@
 export interface EventLookupData {
   id: number;
-  venueId: number;
+  venueId: string;
   isCancelledOrFinished: boolean;
 }
 
