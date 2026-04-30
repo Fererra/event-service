@@ -18,6 +18,6 @@ export function createDataSource(config: {
     password: config.password,
     database: config.database,
     entities: [UserOrmEntity, RefreshTokenOrmEntity, VenueOrmEntity],
-    synchronize: true,
+    synchronize: false,
   });
 }
