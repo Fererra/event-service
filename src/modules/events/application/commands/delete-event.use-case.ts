@@ -1,5 +1,9 @@
 import { IEventRepository } from "../../domain/repositories/event.repository.interface";
-import { NotFoundError, UnauthorizedError } from "../../../../shared/domain/errors/domain.error";
+import {
+  NotFoundError,
+  UnauthorizedError,
+  DomainError,
+} from "../../../../shared/domain/errors/domain.error";
 
 export interface DeleteEventCommand {
   eventId: number;
@@ -18,7 +22,7 @@ export class DeleteEventUseCase {
       throw new UnauthorizedError(`User is not the owner of the event ${command.eventId}`);
     }
     if (!event.isCancelledOrFinished()) {
-      throw new Error(`Event ${command.eventId} cannot be deleted in its current state`);
+      throw new DomainError(`Event ${command.eventId} cannot be deleted in its current state`);
     }
 
     await this.eventsRepository.delete(event.id);
