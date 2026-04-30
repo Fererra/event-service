@@ -1,4 +1,4 @@
-import { LessThanOrEqual, Repository } from "typeorm";
+import { LessThanOrEqual, MoreThanOrEqual, Repository, In } from "typeorm";
 import { Event } from "../../domain/entities/event.entity";
 import { IEventRepository } from "../../domain/repositories/event.repository.interface";
 import { EventOrmEntity } from "../orm/entities/event.orm-entity";
@@ -23,6 +23,7 @@ export class PostgresEventRepository implements IEventRepository {
       where: {
         status: EventStatus.IN_PLANNING,
         startTimestamp: LessThanOrEqual(date),
+        endTimestamp: MoreThanOrEqual(date),
       },
     });
     return rows.map(EventMapper.toDomain);
@@ -31,7 +32,7 @@ export class PostgresEventRepository implements IEventRepository {
   async findEventsToFinish(date: Date): Promise<Event[]> {
     const rows = await this.ormRepo.find({
       where: {
-        status: EventStatus.ACTIVE,
+        status: In([EventStatus.ACTIVE, EventStatus.IN_PLANNING]),
         endTimestamp: LessThanOrEqual(date),
       },
     });

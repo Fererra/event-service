@@ -99,9 +99,12 @@ export class Event {
   }
 
   finish(): void {
-    if (this._status !== EventStatus.ACTIVE) {
+    const allowedStatuses = [EventStatus.ACTIVE, EventStatus.IN_PLANNING];
+
+    if (!allowedStatuses.includes(this._status)) {
       throw new DomainError(`Cannot finish the event that is ${this._status}`);
     }
+    this._status = EventStatus.FINISHED;
   }
 
   update(data: UpdateEventData): void {
