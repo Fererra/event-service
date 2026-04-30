@@ -13,6 +13,15 @@ import { registerAuthRoutes } from "./modules/auth/presentation/controllers/auth
 import { registerExceptionHandlers } from "./modules/auth/presentation/hooks/exception.handler";
 import { UserOrmEntity } from "./modules/auth/infrastructure/orm/entities/user.orm-entity";
 import { RefreshTokenOrmEntity } from "./modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
+import { venueRoutes } from "./modules/venue/presentation/controllers/venue.controller";
+import { CreateVenueUseCase } from "./modules/venue/application/use-cases/create-venue.use-case";
+import { GetAllVenuesUseCase } from "./modules/venue/application/use-cases/get-venues.use-case";
+import { GetVenueByIdUseCase } from "./modules/venue/application/use-cases/get-venue-by-id.use-case";
+import { UpdateVenueUseCase } from "./modules/venue/application/use-cases/update-venue.use-case";
+import { DeleteVenueUseCase } from "./modules/venue/application/use-cases/delete-venue.use-case";
+import { VenueEventChecker } from "./modules/venue/application/ports/venue-event-checker.service";
+import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
+import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
 
 async function bootstrap() {
   const config = {
@@ -66,7 +75,37 @@ async function bootstrap() {
     tokenService,
   );
 
+  const venueRepository = new PostgresVenueRepository(
+    dataSource.getRepository(VenueOrmEntity),
+  );
+  const createVenueUseCase = new CreateVenueUseCase(venueRepository);
+  const getAllVenuesUseCase = new GetAllVenuesUseCase(venueRepository);
+  const getVenueByIdUseCase = new GetVenueByIdUseCase(venueRepository);
+  const updateVenueUseCase = new UpdateVenueUseCase(venueRepository);
+
+  const mockEventChecker: VenueEventChecker = {
+    hasAnyEvents: async (venueId: string) => {
+      // todo: add logic when the event is done and merged
+      return false;
+    },
+  };
+
+  const deleteVenueUseCase = new DeleteVenueUseCase(
+    venueRepository,
+    mockEventChecker,
+  );
+
   const app = Fastify({ logger: true });
+
+  venueRoutes(
+    app,
+    createVenueUseCase,
+    getAllVenuesUseCase,
+    getVenueByIdUseCase,
+    updateVenueUseCase,
+    deleteVenueUseCase,
+    tokenService,
+  );
 
   registerExceptionHandlers(app);
 

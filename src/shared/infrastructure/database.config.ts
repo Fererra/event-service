@@ -1,6 +1,7 @@
 import { DataSource } from "typeorm";
-import { UserOrmEntity } from "../modules/auth/infrastructure/orm/entities/user.orm-entity";
-import { RefreshTokenOrmEntity } from "../modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
+import { UserOrmEntity } from "../../modules/auth/infrastructure/orm/entities/user.orm-entity";
+import { RefreshTokenOrmEntity } from "../../modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
+import { VenueOrmEntity } from "../../modules/venue/infrastructure/orm/entities/venue.orm-entity";
 
 export function createDataSource(config: {
   host: string;
@@ -16,7 +17,7 @@ export function createDataSource(config: {
     username: config.username,
     password: config.password,
     database: config.database,
-    entities: [UserOrmEntity, RefreshTokenOrmEntity],
+    entities: [UserOrmEntity, RefreshTokenOrmEntity, VenueOrmEntity],
     synchronize: false,
   });
 }
