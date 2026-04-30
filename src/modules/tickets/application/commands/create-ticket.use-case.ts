@@ -3,6 +3,7 @@ import { TicketType } from "../../domain/value-objects/ticket-type.enum";
 import { ITicketRepository } from "../../domain/repositories/ticket.repository.interface";
 import { IEventLookupRepository } from "../../domain/repositories/event-lookup.repository.interface";
 import { NotFoundError, DomainError } from "../../../../shared/domain/errors/domain.error";
+import { Ticket } from "../../domain/entities/ticket.entity";
 
 export interface CreateTicketCommand {
   eventId: number;
@@ -18,7 +19,7 @@ export class CreateTicketUseCase {
     private readonly eventLookupRepository: IEventLookupRepository,
   ) {}
 
-  async execute(command: CreateTicketCommand): Promise<number> {
+  async execute(command: CreateTicketCommand): Promise<Ticket> {
     const event = await this.eventLookupRepository.findById(command.eventId);
     if (!event) {
       throw new NotFoundError(`Event with id ${command.eventId} not found`);
@@ -36,6 +37,6 @@ export class CreateTicketUseCase {
       price: command.price,
     });
     const saved = await this.ticketRepository.save(ticket);
-    return saved.id;
+    return saved;
   }
 }

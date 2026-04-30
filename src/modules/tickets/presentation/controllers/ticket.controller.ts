@@ -55,13 +55,13 @@ export function registerTicketRoutes(
       schema: createTicketSchema,
     },
     async (req, reply) => {
-      const ticketId = await createTicketUseCase.execute({
+      const ticket = await createTicketUseCase.execute({
         eventId: Number(req.params.eventId),
         type: req.body.type,
         limit: req.body.limit,
         price: req.body.price,
       });
-      reply.status(201).send({ id: ticketId });
+      reply.status(201).send({ ticket });
     },
   );
 
