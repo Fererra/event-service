@@ -16,6 +16,17 @@ import { registerExceptionHandlers } from "./modules/auth/presentation/hooks/exc
 import { UserOrmEntity } from "./modules/auth/infrastructure/orm/entities/user.orm-entity";
 import { RefreshTokenOrmEntity } from "./modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
 
+// Venues imports
+import { venueRoutes } from "./modules/venue/presentation/controllers/venue.controller";
+import { CreateVenueUseCase } from "./modules/venue/application/use-cases/create-venue.use-case";
+import { GetAllVenuesUseCase } from "./modules/venue/application/use-cases/get-venues.use-case";
+import { GetVenueByIdUseCase } from "./modules/venue/application/use-cases/get-venue-by-id.use-case";
+import { UpdateVenueUseCase } from "./modules/venue/application/use-cases/update-venue.use-case";
+import { DeleteVenueUseCase } from "./modules/venue/application/use-cases/delete-venue.use-case";
+import { VenueEventChecker } from "./modules/venue/application/ports/venue-event-checker.service";
+import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
+import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
+
 // Events imports
 import { EventOrmEntity } from "./modules/events/infrastructure/orm/entities/event.orm-entity";
 import { PostgresEventRepository } from "./modules/events/infrastructure/repositories/postgres-event.repository";
@@ -94,6 +105,22 @@ async function bootstrap() {
     tokenService,
   );
 
+  // Venues
+  const venueRepository = new PostgresVenueRepository(dataSource.getRepository(VenueOrmEntity));
+  const createVenueUseCase = new CreateVenueUseCase(venueRepository);
+  const getAllVenuesUseCase = new GetAllVenuesUseCase(venueRepository);
+  const getVenueByIdUseCase = new GetVenueByIdUseCase(venueRepository);
+  const updateVenueUseCase = new UpdateVenueUseCase(venueRepository);
+
+  const mockEventChecker: VenueEventChecker = {
+    hasAnyEvents: async (venueId: string) => {
+      // todo: add logic when the event is done and merged
+      return false;
+    },
+  };
+
+  const deleteVenueUseCase = new DeleteVenueUseCase(venueRepository, mockEventChecker);
+
   // Events
   const eventRepository = new PostgresEventRepository(dataSource.getRepository(EventOrmEntity));
   const eventsVenueRepository = new EventsVenueRepository(dataSource);
@@ -148,6 +175,16 @@ async function bootstrap() {
 
   // Fastify
   const app = Fastify({ logger: true });
+
+  venueRoutes(
+    app,
+    createVenueUseCase,
+    getAllVenuesUseCase,
+    getVenueByIdUseCase,
+    updateVenueUseCase,
+    deleteVenueUseCase,
+    tokenService,
+  );
 
   registerExceptionHandlers(app);
 
