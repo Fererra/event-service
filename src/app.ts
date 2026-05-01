@@ -57,6 +57,18 @@ import { UpdateTicketUseCase } from "./modules/tickets/application/commands/upda
 import { DeleteTicketUseCase } from "./modules/tickets/application/commands/delete-ticket.use-case";
 import { registerTicketRoutes } from "./modules/tickets/presentation/controllers/ticket.controller";
 
+// Registrations imports
+import { PostgresRegistrationRepository } from "./modules/registrations/infrastructure/repositories/postgres-registration.repository";
+import { RegistrationFactory } from "./modules/registrations/domain/factories/registration.factory";
+import { CreateRegistrationUseCase } from "./modules/registrations/application/use-cases/create-registration.use-case";
+import { GetUserRegistrationsUseCase } from "./modules/registrations/application/use-cases/get-user-registrations.use-case";
+import { GetUserRegistrationUseCase } from "./modules/registrations/application/use-cases/get-user-registration.use-case";
+import { GetEventRegistrationsUseCase } from "./modules/registrations/application/use-cases/get-event-registrations.use-case";
+import { GetEventRegistrationUseCase } from "./modules/registrations/application/use-cases/get-event-registration.use-case";
+import { registerRegistrationRoutes } from "./modules/registrations/presentation/controllers/registration.controller";
+import { RegistrationOrmEntity } from "./modules/registrations/infrastructure/orm/entities/registration.orm-entity";
+import { CancelRegistrationUseCase } from "./modules/registrations/application/use-cases/cancel-registration.use-case";
+
 async function bootstrap() {
   const config = {
     port: Number(process.env.PORT) || 3000,
@@ -180,6 +192,40 @@ async function bootstrap() {
     registrationCountRepository,
   );
 
+  // Registrations
+  const registrationOrmRepository = dataSource.getRepository(
+    RegistrationOrmEntity,
+  );
+  const registrationRepository = new PostgresRegistrationRepository(
+    registrationOrmRepository,
+  );
+
+  const registrationFactory = new RegistrationFactory(
+    registrationRepository,
+    ticketRepository,
+    eventRepository,
+  );
+
+  const createRegistrationUseCase = new CreateRegistrationUseCase(
+    registrationRepository,
+    registrationFactory,
+  );
+  const getUserRegistrationsUseCase = new GetUserRegistrationsUseCase(
+    registrationRepository,
+  );
+  const getUserRegistrationUseCase = new GetUserRegistrationUseCase(
+    registrationRepository,
+  );
+  const getEventRegistrationsUseCase = new GetEventRegistrationsUseCase(
+    registrationRepository,
+  );
+  const getEventRegistrationUseCase = new GetEventRegistrationUseCase(
+    registrationRepository,
+  );
+  const cancelRegistrationUseCase = new CancelRegistrationUseCase(
+    registrationRepository,
+  );
+
   // Events create use case
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
   const createEventUseCase = new CreateEventUseCase(
@@ -236,6 +282,17 @@ async function bootstrap() {
       updateTicketUseCase,
       deleteTicketUseCase,
     },
+    tokenService,
+  );
+
+  registerRegistrationRoutes(
+    app,
+    createRegistrationUseCase,
+    getUserRegistrationsUseCase,
+    getUserRegistrationUseCase,
+    getEventRegistrationsUseCase,
+    getEventRegistrationUseCase,
+    cancelRegistrationUseCase,
     tokenService,
   );
 

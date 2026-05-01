@@ -28,22 +28,22 @@ export class CreateEventUseCase {
   ) {}
 
   async execute(command: CreateEventCommand): Promise<Event> {
+    const venue = await this.venueRepository.findById(command.venueId);
+    if (!venue) {
+      throw new DomainError(`Venue not found`);
+    }
+
     if (command.tickets && command.tickets.length > 0) {
       if (command.tickets.length > 3) {
         throw new DomainError("Cannot create more than 3 ticket types for an event");
       }
+
       const types = command.tickets.map((t) => t.type);
       if (new Set(types).size !== types.length) {
         throw new DomainError("Ticket types must be unique");
       }
-    }
 
-    const event = await this.eventFactory.create(command);
-    const savedEvent = await this.eventRepository.save(event);
-
-    if (command.tickets && command.tickets.length > 0) {
-      const venue = await this.venueRepository.findById(command.venueId);
-      if (venue && venue.capacity !== null) {
+      if (venue.capacity !== null) {
         const totalLimit = command.tickets.reduce((sum, t) => sum + t.limit, 0);
         if (totalLimit > venue.capacity) {
           throw new DomainError(
@@ -51,6 +51,12 @@ export class CreateEventUseCase {
           );
         }
       }
+    }
+
+    const event = await this.eventFactory.create(command);
+    const savedEvent = await this.eventRepository.save(event);
+
+    if (command.tickets && command.tickets.length > 0) {
       await this.ticketCreator.createTicketsForEvent(savedEvent.id, command.tickets);
     }
     return savedEvent;
