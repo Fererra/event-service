@@ -191,18 +191,18 @@ async function bootstrap() {
   const registrationOrmRepository = dataSource.getRepository(
     RegistrationOrmEntity,
   );
-  const registrationRepo = new PostgresRegistrationRepository(
+  const registrationRepository = new PostgresRegistrationRepository(
     registrationOrmRepository,
   );
 
   const registrationFactory = new RegistrationFactory(
-    registrationRepo,
+    registrationRepository,
     ticketRepository,
     eventRepository,
   );
 
   const createRegistrationUseCase = new CreateRegistrationUseCase(
-    registrationRepo,
+    registrationRepository,
     registrationFactory,
   );
 

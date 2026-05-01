@@ -7,9 +7,9 @@ import { IEventRepository } from "../../../events/domain/repositories/event.repo
 
 export class RegistrationFactory {
   constructor(
-    private readonly registrationRepo: RegistrationRepository,
-    private readonly ticketRepo: ITicketRepository,
-    private readonly eventRepo: IEventRepository,
+    private readonly registrationRepository: RegistrationRepository,
+    private readonly ticketRepository: ITicketRepository,
+    private readonly eventRepository: IEventRepository,
   ) {}
 
   async createNew(
@@ -17,12 +17,12 @@ export class RegistrationFactory {
     eventId: number,
     ticketId: number,
   ): Promise<Registration> {
-    const event = await this.eventRepo.findById(eventId);
+    const event = await this.eventRepository.findById(eventId);
     if (!event) {
       throw new DomainError("Event not found");
     }
 
-    const ticket = await this.ticketRepo.findById(ticketId);
+    const ticket = await this.ticketRepository.findById(ticketId);
     if (!ticket) {
       throw new DomainError("Ticket category not found");
     }
@@ -34,7 +34,7 @@ export class RegistrationFactory {
     }
 
     const currentRegistrationsCount =
-      await this.registrationRepo.countByTicketId(ticketId);
+      await this.registrationRepository.countByTicketId(ticketId);
     if (currentRegistrationsCount >= ticket.limit) {
       throw new DomainError(
         `Tickets sold out. Limit of ${ticket.limit} reached for this ticket type`,

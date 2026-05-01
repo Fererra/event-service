@@ -4,7 +4,7 @@ import { RegistrationFactory } from "../../domain/factories/registration.factory
 
 export class CreateRegistrationUseCase {
   constructor(
-    private readonly registrationRepo: RegistrationRepository,
+    private readonly registrationRepository: RegistrationRepository,
     private readonly registrationFactory: RegistrationFactory,
   ) {}
 
@@ -19,7 +19,7 @@ export class CreateRegistrationUseCase {
       data.ticketId,
     );
 
-    await this.registrationRepo.save(registration);
+    await this.registrationRepository.save(registration);
 
     return registration;
   }
