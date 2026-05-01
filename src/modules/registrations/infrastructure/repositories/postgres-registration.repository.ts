@@ -20,6 +20,21 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
     return RegistrationMapper.toDomain(saved);
   }
 
+  async countByEventAndTicket(
+    eventId: number,
+    ticketId: number,
+  ): Promise<number> {
+    return await this.ormRepository.count({
+      where: {
+        ticketId: ticketId,
+        ticket: {
+          eventId: eventId,
+        },
+      },
+      relations: ["ticket"],
+    });
+  }
+
   async findById(id: string): Promise<Registration | null> {
     const ormEntity = await this.ormRepository.findOne({ where: { id } });
     return ormEntity ? RegistrationMapper.toDomain(ormEntity) : null;
