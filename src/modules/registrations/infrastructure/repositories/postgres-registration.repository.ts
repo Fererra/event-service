@@ -20,6 +20,11 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
     return RegistrationMapper.toDomain(saved);
   }
 
+  async findById(id: string): Promise<Registration | null> {
+    const ormEntity = await this.ormRepository.findOne({ where: { id } });
+    return ormEntity ? RegistrationMapper.toDomain(ormEntity) : null;
+  }
+
   async findByUserId(userId: string): Promise<Registration[]> {
     const ormEntities = await this.ormRepository.find({ where: { userId } });
     return ormEntities.map((entity) => RegistrationMapper.toDomain(entity));
@@ -57,5 +62,9 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
       .getOne();
 
     return ormEntity ? RegistrationMapper.toDomain(ormEntity) : null;
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.ormRepository.delete(id);
   }
 }
