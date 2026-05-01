@@ -67,7 +67,7 @@ export const createEventSchema = {
       description: { type: "string" },
       start_timestamp: { type: "string", format: "date-time" },
       end_timestamp: { type: "string", format: "date-time" },
-      venue_id: { type: "string", minimum: 1 },
+      venue_id: { type: "string", minLength: 1, format: "uuid" },
       tickets: {
         type: "array",
         items: ticketInlineSchema,
