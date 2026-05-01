@@ -4,6 +4,8 @@ import { GetUserRegistrationsUseCase } from "../../application/use-cases/get-use
 import { GetUserRegistrationUseCase } from "../../application/use-cases/get-user-registration.use-case";
 import { GetEventRegistrationsUseCase } from "../../application/use-cases/get-event-registrations.use-case";
 import { GetEventRegistrationUseCase } from "../../application/use-cases/get-event-registration.use-case";
+import { CancelRegistrationUseCase } from "../../application/use-cases/cancel-registration.use-case";
+
 import {
   CreateRegistrationDto,
   CreateRegistrationSchema,
@@ -15,6 +17,8 @@ import {
   GetEventRegistrationsDto,
   GetEventRegistrationSchema,
   GetEventRegistrationDto,
+  CancelRegistrationSchema,
+  CancelRegistrationDto,
 } from "../../presentation/dto/registration.dto";
 import { RegistrationDtoMapper } from "../mappers/registration-dto.mapper";
 import { createAdminGuard } from "../../../auth/presentation/guards/admin.guard";
@@ -28,6 +32,7 @@ export function registerRegistrationRoutes(
   getUserRegistrationUseCase: GetUserRegistrationUseCase,
   getEventRegistrationsUseCase: GetEventRegistrationsUseCase,
   getEventRegistrationUseCase: GetEventRegistrationUseCase,
+  cancelRegistrationUseCase: CancelRegistrationUseCase,
   tokenService: JwtTokenService,
 ) {
   const adminGuard = createAdminGuard();
@@ -123,6 +128,27 @@ export function registerRegistrationRoutes(
       );
 
       return reply.send(RegistrationDtoMapper.toDto(registration));
+    },
+  );
+
+  app.delete<CancelRegistrationDto>(
+    "/users/:userId/registrations/:registrationId",
+    { preHandler: [jwtGuard], schema: CancelRegistrationSchema },
+    async (req, reply) => {
+      const user = (req as any).user;
+
+      try {
+        await cancelRegistrationUseCase.execute(
+          req.params.registrationId,
+          user.id,
+          user.role,
+        );
+
+        return reply.status(204).send();
+      } catch (error: any) {
+        const status = error.message.includes("not found") ? 404 : 403;
+        return reply.status(status).send({ message: error.message });
+      }
     },
   );
 }
