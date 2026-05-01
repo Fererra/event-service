@@ -1,7 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
 import { Venue } from "../entities/venue.entity";
 import { VenueCapacity } from "../value-objects/venue-capacity.vo";
-import { DomainError } from "../../../../shared/domain/errors/domain.error";
+import {
+  ConflictError,
+  DomainError,
+} from "../../../../shared/domain/errors/domain.error";
 import { VenueRepository } from "../repositories/venue.repository";
 
 export class VenueFactory {
@@ -20,7 +23,7 @@ export class VenueFactory {
 
     const existingVenue = await venueRepository.findByAddress(address);
     if (existingVenue) {
-      throw new DomainError("Venue with this address already exists");
+      throw new ConflictError("Venue with this address already exists");
     }
 
     const id = uuidv4();

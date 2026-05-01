@@ -1,5 +1,5 @@
 import { VenueRepository } from "../../domain/repositories/venue.repository";
-import { DomainError } from "../../../../shared/domain/errors/domain.error";
+import { NotFoundError } from "../../../../shared/domain/errors/domain.error";
 
 export class GetVenueByIdUseCase {
   constructor(private readonly venueRepository: VenueRepository) {}
@@ -8,7 +8,7 @@ export class GetVenueByIdUseCase {
     const venue = await this.venueRepository.findById(id);
 
     if (!venue) {
-      throw new DomainError("Venue not found");
+      throw new NotFoundError("Venue not found");
     }
 
     return {
