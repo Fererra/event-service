@@ -57,6 +57,13 @@ import { UpdateTicketUseCase } from "./modules/tickets/application/commands/upda
 import { DeleteTicketUseCase } from "./modules/tickets/application/commands/delete-ticket.use-case";
 import { registerTicketRoutes } from "./modules/tickets/presentation/controllers/ticket.controller";
 
+// Registrations imports
+import { PostgresRegistrationRepository } from "./modules/registrations/infrastructure/repositories/postgres-registration.repository";
+import { RegistrationFactory } from "./modules/registrations/domain/factories/registration.factory";
+import { CreateRegistrationUseCase } from "./modules/registrations/application/use-cases/create-registration.use-case";
+import { registerRegistrationRoutes } from "./modules/registrations/presentation/controllers/registration.controller";
+import { RegistrationOrmEntity } from "./modules/registrations/infrastructure/orm/entities/registration.orm-entity";
+
 async function bootstrap() {
   const config = {
     port: Number(process.env.PORT) || 3000,
@@ -180,6 +187,25 @@ async function bootstrap() {
     registrationCountRepository,
   );
 
+  // Registrations
+  const registrationOrmRepository = dataSource.getRepository(
+    RegistrationOrmEntity,
+  );
+  const registrationRepo = new PostgresRegistrationRepository(
+    registrationOrmRepository,
+  );
+
+  const registrationFactory = new RegistrationFactory(
+    registrationRepo,
+    ticketRepository,
+    eventRepository,
+  );
+
+  const createRegistrationUseCase = new CreateRegistrationUseCase(
+    registrationRepo,
+    registrationFactory,
+  );
+
   // Events create use case
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
   const createEventUseCase = new CreateEventUseCase(
@@ -238,6 +264,8 @@ async function bootstrap() {
     },
     tokenService,
   );
+
+  registerRegistrationRoutes(app, createRegistrationUseCase, tokenService);
 
   await app.listen({ port: config.port, host: "0.0.0.0" });
   console.log(`Server running on port ${config.port}`);

@@ -4,6 +4,7 @@ import { RefreshTokenOrmEntity } from "../../modules/auth/infrastructure/orm/ent
 import { EventOrmEntity } from "../../modules/events/infrastructure/orm/entities/event.orm-entity";
 import { TicketOrmEntity } from "../../modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
 import { VenueOrmEntity } from "../../modules/venue/infrastructure/orm/entities/venue.orm-entity";
+import { RegistrationOrmEntity } from "../../modules/registrations/infrastructure/orm/entities/registration.orm-entity";
 
 export function createDataSource(config: {
   host: string;
@@ -25,6 +26,7 @@ export function createDataSource(config: {
       EventOrmEntity,
       TicketOrmEntity,
       VenueOrmEntity,
+      RegistrationOrmEntity,
     ],
     synchronize: false,
   });
