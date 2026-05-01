@@ -67,6 +67,7 @@ import { GetEventRegistrationsUseCase } from "./modules/registrations/applicatio
 import { GetEventRegistrationUseCase } from "./modules/registrations/application/use-cases/get-event-registration.use-case";
 import { registerRegistrationRoutes } from "./modules/registrations/presentation/controllers/registration.controller";
 import { RegistrationOrmEntity } from "./modules/registrations/infrastructure/orm/entities/registration.orm-entity";
+import { CancelRegistrationUseCase } from "./modules/registrations/application/use-cases/cancel-registration.use-case";
 
 async function bootstrap() {
   const config = {
@@ -221,6 +222,9 @@ async function bootstrap() {
   const getEventRegistrationUseCase = new GetEventRegistrationUseCase(
     registrationRepository,
   );
+  const cancelRegistrationUseCase = new CancelRegistrationUseCase(
+    registrationRepository,
+  );
 
   // Events create use case
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
@@ -288,6 +292,7 @@ async function bootstrap() {
     getUserRegistrationUseCase,
     getEventRegistrationsUseCase,
     getEventRegistrationUseCase,
+    cancelRegistrationUseCase,
     tokenService,
   );
 
