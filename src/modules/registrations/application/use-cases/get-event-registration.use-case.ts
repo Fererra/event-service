@@ -1,8 +1,5 @@
 import { RegistrationRepository } from "../../domain/repositories/registration.repository";
-import {
-  DomainError,
-  NotFoundError,
-} from "../../../../shared/domain/errors/domain.error";
+import { NotFoundError } from "../../../../shared/domain/errors/domain.error";
 
 export class GetEventRegistrationUseCase {
   constructor(private readonly registrationRepo: RegistrationRepository) {}
