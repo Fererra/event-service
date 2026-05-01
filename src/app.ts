@@ -61,6 +61,10 @@ import { registerTicketRoutes } from "./modules/tickets/presentation/controllers
 import { PostgresRegistrationRepository } from "./modules/registrations/infrastructure/repositories/postgres-registration.repository";
 import { RegistrationFactory } from "./modules/registrations/domain/factories/registration.factory";
 import { CreateRegistrationUseCase } from "./modules/registrations/application/use-cases/create-registration.use-case";
+import { GetUserRegistrationsUseCase } from "./modules/registrations/application/use-cases/get-user-registrations.use-case";
+import { GetUserRegistrationUseCase } from "./modules/registrations/application/use-cases/get-user-registration.use-case";
+import { GetEventRegistrationsUseCase } from "./modules/registrations/application/use-cases/get-event-registrations.use-case";
+import { GetEventRegistrationUseCase } from "./modules/registrations/application/use-cases/get-event-registration.use-case";
 import { registerRegistrationRoutes } from "./modules/registrations/presentation/controllers/registration.controller";
 import { RegistrationOrmEntity } from "./modules/registrations/infrastructure/orm/entities/registration.orm-entity";
 
@@ -205,6 +209,18 @@ async function bootstrap() {
     registrationRepository,
     registrationFactory,
   );
+  const getUserRegistrationsUseCase = new GetUserRegistrationsUseCase(
+    registrationRepository,
+  );
+  const getUserRegistrationUseCase = new GetUserRegistrationUseCase(
+    registrationRepository,
+  );
+  const getEventRegistrationsUseCase = new GetEventRegistrationsUseCase(
+    registrationRepository,
+  );
+  const getEventRegistrationUseCase = new GetEventRegistrationUseCase(
+    registrationRepository,
+  );
 
   // Events create use case
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
@@ -265,7 +281,15 @@ async function bootstrap() {
     tokenService,
   );
 
-  registerRegistrationRoutes(app, createRegistrationUseCase, tokenService);
+  registerRegistrationRoutes(
+    app,
+    createRegistrationUseCase,
+    getUserRegistrationsUseCase,
+    getUserRegistrationUseCase,
+    getEventRegistrationsUseCase,
+    getEventRegistrationUseCase,
+    tokenService,
+  );
 
   await app.listen({ port: config.port, host: "0.0.0.0" });
   console.log(`Server running on port ${config.port}`);
