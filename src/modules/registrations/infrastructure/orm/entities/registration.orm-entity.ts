@@ -1,4 +1,12 @@
-import { Entity, PrimaryColumn, Column, CreateDateColumn } from "typeorm";
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
+import { TicketOrmEntity } from "../../../../tickets/infrastructure/orm/entities/ticket.orm-entity";
 
 @Entity("registrations")
 export class RegistrationOrmEntity {
@@ -10,6 +18,10 @@ export class RegistrationOrmEntity {
 
   @Column({ name: "ticket_id", type: "int" })
   ticketId!: number;
+
+  @ManyToOne(() => TicketOrmEntity)
+  @JoinColumn({ name: "ticket_id" })
+  ticket!: TicketOrmEntity;
 
   @CreateDateColumn({ name: "registration_timestamp", type: "timestamptz" })
   registrationTimestamp!: Date;
