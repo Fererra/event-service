@@ -92,6 +92,24 @@ export type GetEventRegistrationDto = {
   };
 };
 
+export const GetRegistrationsCountSchema = {
+  params: {
+    type: "object",
+    required: ["eventId", "ticketId"],
+    properties: {
+      eventId: { type: "integer" },
+      ticketId: { type: "integer", minimum: 1 },
+    },
+  },
+};
+
+export type GetRegistrationsCountDto = {
+  Params: {
+    eventId: number;
+    ticketId: number;
+  };
+};
+
 export const CancelRegistrationSchema = {
   params: {
     type: "object",

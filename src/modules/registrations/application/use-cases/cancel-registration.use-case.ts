@@ -1,4 +1,8 @@
 import { RegistrationRepository } from "../../domain/repositories/registration.repository";
+import {
+  NotFoundError,
+  UnauthorizedError,
+} from "../../../../shared/domain/errors/domain.error";
 
 export class CancelRegistrationUseCase {
   constructor(
@@ -10,14 +14,16 @@ export class CancelRegistrationUseCase {
       await this.registrationRepository.findById(registrationId);
 
     if (!registration) {
-      throw new Error("Registration not found");
+      throw new NotFoundError("Registration not found");
     }
 
     const isOwner = registration.userId === actorId;
     const isAdmin = actorRole === "admin";
 
     if (!isOwner && !isAdmin) {
-      throw new Error("Forbidden: You can only cancel your own registrations");
+      throw new UnauthorizedError(
+        "Forbidden: You can only cancel your own registrations",
+      );
     }
 
     await this.registrationRepository.delete(registrationId);

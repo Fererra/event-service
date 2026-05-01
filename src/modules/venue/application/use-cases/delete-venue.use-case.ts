@@ -1,6 +1,9 @@
 import { VenueRepository } from "../../domain/repositories/venue.repository";
 import { VenueEventChecker } from "../ports/venue-event-checker.service";
-import { DomainError } from "../../../../shared/domain/errors/domain.error";
+import {
+  ConflictError,
+  NotFoundError,
+} from "../../../../shared/domain/errors/domain.error";
 
 export class DeleteVenueUseCase {
   constructor(
@@ -12,12 +15,12 @@ export class DeleteVenueUseCase {
     const venue = await this.venueRepository.findById(id);
 
     if (!venue) {
-      throw new DomainError("Venue not found");
+      throw new NotFoundError("Venue not found");
     }
 
     const hasEvents = await this.eventChecker.hasAnyEvents(id);
     if (hasEvents) {
-      throw new DomainError(
+      throw new ConflictError(
         "Cannot delete venue: there are events associated with it",
       );
     }

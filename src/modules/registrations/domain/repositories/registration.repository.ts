@@ -4,6 +4,7 @@ export interface RegistrationRepository {
   countByTicketId(ticketId: number): Promise<number>;
   save(registration: Registration): Promise<Registration>;
 
+  countByEventAndTicket(eventId: number, ticketId: number): Promise<number>;
   findById(id: string): Promise<Registration | null>;
   findByUserId(userId: string): Promise<Registration[]>;
   findByIdAndUserId(id: string, userId: string): Promise<Registration | null>;

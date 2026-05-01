@@ -1,5 +1,5 @@
 import { RegistrationRepository } from "../../domain/repositories/registration.repository";
-import { DomainError } from "../../../../shared/domain/errors/domain.error";
+import { NotFoundError } from "../../../../shared/domain/errors/domain.error";
 
 export class GetUserRegistrationUseCase {
   constructor(
@@ -12,7 +12,7 @@ export class GetUserRegistrationUseCase {
       userId,
     );
     if (!registration) {
-      throw new DomainError("Registration not found");
+      throw new NotFoundError("Registration not found");
     }
     return registration;
   }

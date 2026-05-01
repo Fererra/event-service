@@ -1,5 +1,8 @@
 import { VenueRepository } from "../../domain/repositories/venue.repository";
-import { DomainError } from "../../../../shared/domain/errors/domain.error";
+import {
+  ConflictError,
+  NotFoundError,
+} from "../../../../shared/domain/errors/domain.error";
 
 export type UpdateVenueCommand = {
   id: string;
@@ -15,7 +18,7 @@ export class UpdateVenueUseCase {
     const venue = await this.venueRepository.findById(command.id);
 
     if (!venue) {
-      throw new DomainError("Venue not found");
+      throw new NotFoundError("Venue not found");
     }
 
     if (command.name !== undefined) {
@@ -27,7 +30,7 @@ export class UpdateVenueUseCase {
         command.address,
       );
       if (existingVenue && existingVenue.id !== venue.id) {
-        throw new DomainError("Venue with this address already exists");
+        throw new ConflictError("Venue with this address already exists");
       }
       venue.updateAddress(command.address);
     }
