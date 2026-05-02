@@ -14,6 +14,7 @@ import {
   FakeEventInfoRepository,
   FakeTicketInfoRepository,
 } from "../application/fakes";
+import { registerExceptionHandlers } from "../../../../src/shared/presentation/exception.handler";
 
 const TEST_USER_ID = "550e8400-e29b-41d4-a716-446655440000";
 
@@ -48,6 +49,8 @@ export async function buildTestRegistrationsApp(
   );
 
   const app = Fastify({ logger: false });
+
+  registerExceptionHandlers(app);
 
   app.addHook("preHandler", async (req) => {
     (req as any).user = { id: TEST_USER_ID, role };
