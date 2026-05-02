@@ -172,7 +172,6 @@ describe("Venue Endpoints (Integration)", () => {
         url: `/venues/${venueId}`,
       });
 
-      console.log(res.json());
       expect(res.statusCode).toBe(409);
     });
   });
