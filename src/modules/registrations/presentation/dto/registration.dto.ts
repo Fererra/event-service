@@ -3,7 +3,7 @@ export const CreateRegistrationSchema = {
     type: "object",
     required: ["eventId"],
     properties: {
-      eventId: { type: "integer" },
+      eventId: { type: "string", pattern: "^[0-9]+$" },
     },
   },
   body: {
@@ -15,7 +15,7 @@ export const CreateRegistrationSchema = {
   },
 };
 
-export type CreateRegistrationDto = {
+export type CreateRegistrationRoute = {
   Params: {
     eventId: string;
   };
@@ -34,7 +34,7 @@ export const GetUserRegistrationsSchema = {
   },
 };
 
-export type GetUserRegistrationsDto = {
+export type GetUserRegistrationsRoute = {
   Params: {
     userId: string;
   };
@@ -51,7 +51,7 @@ export const GetUserRegistrationSchema = {
   },
 };
 
-export type GetUserRegistrationDto = {
+export type GetUserRegistrationRoute = {
   Params: {
     userId: string;
     registrationId: string;
@@ -63,14 +63,14 @@ export const GetEventRegistrationsSchema = {
     type: "object",
     required: ["eventId"],
     properties: {
-      eventId: { type: "integer" },
+      eventId: { type: "string", pattern: "^[0-9]+$" },
     },
   },
 };
 
-export type GetEventRegistrationsDto = {
+export type GetEventRegistrationsRoute = {
   Params: {
-    eventId: number;
+    eventId: string;
   };
 };
 
@@ -79,15 +79,15 @@ export const GetEventRegistrationSchema = {
     type: "object",
     required: ["eventId", "registrationId"],
     properties: {
-      eventId: { type: "integer" },
+      eventId: { type: "string", pattern: "^[0-9]+$" },
       registrationId: { type: "string", format: "uuid" },
     },
   },
 };
 
-export type GetEventRegistrationDto = {
+export type GetEventRegistrationRoute = {
   Params: {
-    eventId: number;
+    eventId: string;
     registrationId: string;
   };
 };
@@ -97,16 +97,16 @@ export const GetRegistrationsCountSchema = {
     type: "object",
     required: ["eventId", "ticketId"],
     properties: {
-      eventId: { type: "integer" },
-      ticketId: { type: "integer", minimum: 1 },
+      eventId: { type: "string", pattern: "^[0-9]+$" },
+      ticketId: { type: "string", pattern: "^[0-9]+$" },
     },
   },
 };
 
-export type GetRegistrationsCountDto = {
+export type GetRegistrationsCountRoute = {
   Params: {
-    eventId: number;
-    ticketId: number;
+    eventId: string;
+    ticketId: string;
   };
 };
 
@@ -121,6 +121,6 @@ export const CancelRegistrationSchema = {
   },
 };
 
-export type CancelRegistrationDto = {
+export type CancelRegistrationRoute = {
   Params: { userId: string; registrationId: string };
 };
