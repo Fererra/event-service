@@ -4,7 +4,7 @@ export const CreateVenueSchema = {
     required: ["name", "address"],
     properties: {
       name: { type: "string", minLength: 1 },
-      capacity: { type: ["number", "null"], minimum: 1 },
+      capacity: { type: ["number", "null"], minimum: 0 },
       address: { type: "string", minLength: 1 },
     },
   },
@@ -44,7 +44,7 @@ export const UpdateVenueSchema = {
     type: "object",
     properties: {
       name: { type: "string", minLength: 1 },
-      capacity: { type: "number", minimum: 1, nullable: true },
+      capacity: { type: ["number", "null"], minimum: 0 },
       address: { type: "string", minLength: 1 },
     },
     additionalProperties: false,
