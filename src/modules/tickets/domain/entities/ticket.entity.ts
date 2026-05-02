@@ -2,7 +2,7 @@ import { TicketType } from "../value-objects/ticket-type.enum";
 import { DomainError } from "../../../../shared/domain/errors/domain.error";
 
 export interface TicketProps {
-  id: number;
+  id: number | null;
   eventId: number;
   type: TicketType;
   limit: number;
@@ -10,18 +10,16 @@ export interface TicketProps {
 }
 
 export class Ticket {
-  private readonly _id: number;
+  private readonly _id: number | null;
   private readonly _eventId: number;
   private readonly _type: TicketType;
   private _limit: number;
   private _price: number;
 
-  constructor(props: TicketProps) {
-    if (props.limit <= 0) {
-      throw new DomainError("Ticket limit cannot be negative or zero");
-    }
-    if (props.price < 0) {
-      throw new DomainError("Ticket price cannot be negative");
+  private constructor(props: TicketProps, validate: boolean) {
+    if (validate) {
+      this.validateLimit(props.limit);
+      this.validatePrice(props.price);
     }
 
     this._id = props.id;
@@ -31,7 +29,25 @@ export class Ticket {
     this._price = props.price;
   }
 
-  get id(): number {
+  static create(props: Omit<TicketProps, "id">): Ticket {
+    return new Ticket({ ...props, id: null }, true);
+  }
+
+  static fromPersistence(props: TicketProps): Ticket {
+    if (props.id === null) {
+      throw new DomainError("Ticket id is required for persistence");
+    }
+    return new Ticket(props, false);
+  }
+
+  get id(): number | null {
+    return this._id;
+  }
+
+  get persistedId(): number {
+    if (this._id === null) {
+      throw new DomainError("Ticket id is required for persistence");
+    }
     return this._id;
   }
 
@@ -52,16 +68,24 @@ export class Ticket {
   }
 
   updateLimit(newLimit: number): void {
-    if (newLimit <= 0) {
-      throw new DomainError("Ticket limit cannot be negative or zero");
-    }
+    this.validateLimit(newLimit);
     this._limit = newLimit;
   }
 
   updatePrice(newPrice: number): void {
-    if (newPrice < 0) {
+    this.validatePrice(newPrice);
+    this._price = newPrice;
+  }
+
+  private validateLimit(limit: number): void {
+    if (limit <= 0) {
+      throw new DomainError("Ticket limit cannot be negative or zero");
+    }
+  }
+
+  private validatePrice(price: number): void {
+    if (price < 0) {
       throw new DomainError("Ticket price cannot be negative");
     }
-    this._price = newPrice;
   }
 }
