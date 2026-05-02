@@ -1,42 +1,91 @@
 import { VenueCapacity } from "../value-objects/venue-capacity.vo";
 import { DomainError } from "../../../../shared/domain/errors/domain.error";
 
+export interface VenueProps {
+  id: string;
+  name: string;
+  capacity: VenueCapacity;
+  address: string;
+}
+
+export interface VenueCreateProps {
+  id: string;
+  name: string;
+  capacity: number | null;
+  address: string;
+}
+
 export class Venue {
-  public constructor(
-    private readonly _id: string,
-    private _name: string,
-    private _capacity: VenueCapacity,
-    private _address: string,
-  ) {}
+  private constructor(
+    private readonly props: VenueProps,
+    validate: boolean,
+  ) {
+    if (validate) {
+      this.validateName(props.name);
+      this.validateAddress(props.address);
+    }
+  }
+
+  static create(props: VenueCreateProps): Venue {
+    return new Venue(
+      {
+        id: props.id,
+        name: props.name,
+        capacity: VenueCapacity.create(props.capacity),
+        address: props.address,
+      },
+      true,
+    );
+  }
+
+  static fromPersistence(props: VenueCreateProps): Venue {
+    return new Venue(
+      {
+        id: props.id,
+        name: props.name,
+        capacity: VenueCapacity.create(props.capacity),
+        address: props.address,
+      },
+      false,
+    );
+  }
 
   get id(): string {
-    return this._id;
+    return this.props.id;
   }
   get name(): string {
-    return this._name;
+    return this.props.name;
   }
   get capacity(): number | null {
-    return this._capacity.getValue();
+    return this.props.capacity.getValue();
   }
   get address(): string {
-    return this._address;
+    return this.props.address;
   }
 
   updateName(newName: string): void {
-    if (!newName || newName.trim() === "") {
-      throw new DomainError("Venue name cannot be empty");
-    }
-    this._name = newName;
+    this.validateName(newName);
+    this.props.name = newName;
   }
 
   updateAddress(newAddress: string): void {
-    if (!newAddress || newAddress.trim() === "") {
-      throw new DomainError("Venue address cannot be empty");
-    }
-    this._address = newAddress;
+    this.validateAddress(newAddress);
+    this.props.address = newAddress;
   }
 
   updateCapacity(newCapacity: number | null): void {
-    this._capacity = VenueCapacity.create(newCapacity);
+    this.props.capacity = VenueCapacity.create(newCapacity);
+  }
+
+  private validateName(name: string): void {
+    if (!name || name.trim() === "") {
+      throw new DomainError("Venue name cannot be empty");
+    }
+  }
+
+  private validateAddress(address: string): void {
+    if (!address || address.trim() === "") {
+      throw new DomainError("Venue address cannot be empty");
+    }
   }
 }

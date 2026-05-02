@@ -23,6 +23,7 @@ import { GetAllVenuesUseCase } from "./modules/venue/application/use-cases/get-v
 import { GetVenueByIdUseCase } from "./modules/venue/application/use-cases/get-venue-by-id.use-case";
 import { UpdateVenueUseCase } from "./modules/venue/application/use-cases/update-venue.use-case";
 import { DeleteVenueUseCase } from "./modules/venue/application/use-cases/delete-venue.use-case";
+import { VenueFactory } from "./modules/venue/domain/factories/venue.factory";
 import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
 import { TypeOrmVenueEventChecker } from "./modules/venue/infrastructure/repositories/venue-event-checker";
 import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
@@ -122,10 +123,11 @@ async function bootstrap() {
 
   // Venues
   const venueRepository = new PostgresVenueRepository(dataSource.getRepository(VenueOrmEntity));
-  const createVenueUseCase = new CreateVenueUseCase(venueRepository);
+  const venueFactory = new VenueFactory(venueRepository);
+  const createVenueUseCase = new CreateVenueUseCase(venueRepository, venueFactory);
   const getAllVenuesUseCase = new GetAllVenuesUseCase(venueRepository);
   const getVenueByIdUseCase = new GetVenueByIdUseCase(venueRepository);
-  const updateVenueUseCase = new UpdateVenueUseCase(venueRepository);
+  const updateVenueUseCase = new UpdateVenueUseCase(venueRepository, venueFactory);
 
   const eventOrmRepo = dataSource.getRepository(EventOrmEntity);
   const realEventChecker = new TypeOrmVenueEventChecker(eventOrmRepo);
@@ -211,11 +213,13 @@ async function bootstrap() {
 
   venueRoutes(
     app,
-    createVenueUseCase,
-    getAllVenuesUseCase,
-    getVenueByIdUseCase,
-    updateVenueUseCase,
-    deleteVenueUseCase,
+    {
+      createVenueUseCase,
+      getAllVenuesUseCase,
+      getVenueByIdUseCase,
+      updateVenueUseCase,
+      deleteVenueUseCase,
+    },
     tokenService,
   );
 

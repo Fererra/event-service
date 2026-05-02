@@ -8,15 +8,13 @@ export type CreateVenueCommand = {
 };
 
 export class CreateVenueUseCase {
-  constructor(private readonly venueRepository: VenueRepository) {}
+  constructor(
+    private readonly venueRepository: VenueRepository,
+    private readonly venueFactory: VenueFactory,
+  ) {}
 
   async execute(command: CreateVenueCommand): Promise<string> {
-    const venue = await VenueFactory.create(
-      command.name,
-      command.capacity,
-      command.address,
-      this.venueRepository,
-    );
+    const venue = await this.venueFactory.create(command.name, command.capacity, command.address);
 
     await this.venueRepository.save(venue);
 
