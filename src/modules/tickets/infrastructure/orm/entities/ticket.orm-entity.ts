@@ -15,6 +15,14 @@ export class TicketOrmEntity {
   @Column({ type: "int" })
   limit!: number;
 
-  @Column({ type: "numeric", precision: 10, scale: 2 })
+  @Column({
+    type: "numeric",
+    precision: 10,
+    scale: 2,
+    transformer: {
+      to: (value: number): number => value,
+      from: (value: string): number => Number(value),
+    },
+  })
   price!: number;
 }

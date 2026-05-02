@@ -35,6 +35,6 @@ export class DeleteTicketUseCase {
       );
     }
 
-    await this.ticketRepository.delete(ticket.id);
+    await this.ticketRepository.delete(ticket.persistedId);
   }
 }

@@ -17,7 +17,7 @@ import { TokenService } from "../../../auth/application/ports/token.service";
 
 function toTicketResponse(ticket: Ticket): TicketResponseDto {
   return {
-    id: ticket.id,
+    id: ticket.persistedId,
     event_id: ticket.eventId,
     type: ticket.type,
     limit: ticket.limit,
@@ -61,7 +61,7 @@ export function registerTicketRoutes(
         limit: req.body.limit,
         price: req.body.price,
       });
-      reply.status(201).send({ ticket });
+      reply.status(201).send({ ticket: toTicketResponse(ticket) });
     },
   );
 

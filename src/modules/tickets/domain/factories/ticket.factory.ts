@@ -44,8 +44,7 @@ export class TicketFactory {
       }
     }
 
-    return new Ticket({
-      id: 0,
+    return Ticket.create({
       eventId: data.eventId,
       type: data.type,
       limit: data.limit,
