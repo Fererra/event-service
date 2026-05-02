@@ -19,7 +19,7 @@ export class EventMapper {
 
   static toOrm(domain: Event): EventOrmEntity {
     const orm = new EventOrmEntity();
-    if (domain.id !== 0) orm.id = domain.id;
+    if (domain.id !== null) orm.id = domain.id;
     orm.ownerId = domain.ownerId;
     orm.name = domain.name;
     orm.organisator = domain.organisator;

@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 import { EventStatus } from "../../../domain/value-objects/event-status.enum";
 
 @Entity("events")
@@ -30,6 +30,6 @@ export class EventOrmEntity {
   @Column({ name: "venue_id", type: "varchar" })
   venueId!: string;
 
-  @Column({ name: "created_at", type: "timestamptz" })
+  @Column({ name: "created_at", type: "timestamptz", default: () => "NOW()" })
   createdAt!: Date;
 }
