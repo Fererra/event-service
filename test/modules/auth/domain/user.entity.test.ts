@@ -1,6 +1,6 @@
 import { User } from "../../../../src/modules/auth/domain/entities/user.entity";
 import { Email } from "../../../../src/modules/auth/domain/value-objects/email.vo";
-import { UserRole } from "../../../../src/modules/auth/domain/value-objects/user-role.vo";
+import { UserRole } from "../../../../src/shared/domain/value-objects/user-role.enum";
 
 function makeUser(
   overrides: Partial<{
