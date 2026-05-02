@@ -4,7 +4,7 @@ import { LoginUseCase } from "../../../../src/modules/auth/application/commands/
 import { LogoutUseCase } from "../../../../src/modules/auth/application/commands/logout.use-case";
 import { RefreshTokensUseCase } from "../../../../src/modules/auth/application/commands/refresh-tokens.use-case";
 import { registerAuthRoutes } from "../../../../src/modules/auth/presentation/controllers/auth.controller";
-import { registerExceptionHandlers } from "../../../../src/modules/auth/presentation/hooks/exception.handler";
+import { registerExceptionHandlers } from "../../../../src/shared/presentation/exception.handler";
 import {
   InMemoryUserRepository,
   InMemoryRefreshTokenRepository,
@@ -30,18 +30,9 @@ export async function buildTestApp(): Promise<TestApp> {
     passwordService,
     tokenService,
   );
-  const loginUseCase = new LoginUseCase(
-    userRepo,
-    refreshTokenRepo,
-    passwordService,
-    tokenService,
-  );
+  const loginUseCase = new LoginUseCase(userRepo, refreshTokenRepo, passwordService, tokenService);
   const logoutUseCase = new LogoutUseCase(refreshTokenRepo, tokenService);
-  const refreshTokensUseCase = new RefreshTokensUseCase(
-    userRepo,
-    refreshTokenRepo,
-    tokenService,
-  );
+  const refreshTokensUseCase = new RefreshTokensUseCase(userRepo, refreshTokenRepo, tokenService);
 
   const app = Fastify({ logger: false });
 
