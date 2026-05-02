@@ -28,7 +28,7 @@ export class EventPeriod {
     return this._endDate < new Date();
   }
 
-  IsEquals(other: EventPeriod): boolean {
+  isEquals(other: EventPeriod): boolean {
     return (
       this._startDate.getTime() === other.startDate.getTime() &&
       this._endDate.getTime() === other.endDate.getTime()

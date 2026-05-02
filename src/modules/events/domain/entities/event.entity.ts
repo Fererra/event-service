@@ -8,12 +8,11 @@ export interface UpdateEventData {
   description?: string;
   startTimestamp?: Date;
   endTimestamp?: Date;
-  status?: EventStatus;
   venueId?: string;
 }
 
 export interface EventProps {
-  id: number;
+  id: number | null;
   ownerId: string;
   name: string;
   organisator: string;
@@ -25,7 +24,7 @@ export interface EventProps {
 }
 
 export class Event {
-  private readonly _id: number;
+  private readonly _id: number | null;
   private readonly _ownerId: string;
   private _name: string;
   private _organisator: string;
@@ -47,7 +46,7 @@ export class Event {
     this._createdAt = props.createdAt;
   }
 
-  get id(): number {
+  get id(): number | null {
     return this._id;
   }
   get ownerId(): string {
@@ -123,11 +122,14 @@ export class Event {
     if (data.description !== undefined) {
       this._description = data.description;
     }
-    if (data.status !== undefined) {
-      this._status = data.status;
-    }
     if (data.venueId !== undefined) {
       this._venueId = data.venueId;
+    }
+  }
+
+  delete(): void {
+    if (!this.isCancelledOrFinished()) {
+      throw new DomainError(`Event ${this._id} cannot be deleted in its current state`);
     }
   }
 
