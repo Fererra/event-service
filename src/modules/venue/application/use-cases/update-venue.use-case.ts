@@ -1,8 +1,6 @@
 import { VenueRepository } from "../../domain/repositories/venue.repository";
-import {
-  ConflictError,
-  NotFoundError,
-} from "../../../../shared/domain/errors/domain.error";
+import { NotFoundError } from "../../../../shared/domain/errors/domain.error";
+import { VenueFactory } from "../../domain/factories/venue.factory";
 
 export type UpdateVenueCommand = {
   id: string;
@@ -12,7 +10,10 @@ export type UpdateVenueCommand = {
 };
 
 export class UpdateVenueUseCase {
-  constructor(private readonly venueRepository: VenueRepository) {}
+  constructor(
+    private readonly venueRepository: VenueRepository,
+    private readonly venueFactory: VenueFactory,
+  ) {}
 
   async execute(command: UpdateVenueCommand): Promise<void> {
     const venue = await this.venueRepository.findById(command.id);
@@ -26,12 +27,7 @@ export class UpdateVenueUseCase {
     }
 
     if (command.address !== undefined && command.address !== venue.address) {
-      const existingVenue = await this.venueRepository.findByAddress(
-        command.address,
-      );
-      if (existingVenue && existingVenue.id !== venue.id) {
-        throw new ConflictError("Venue with this address already exists");
-      }
+      await this.venueFactory.assertAddressAvailable(command.address, venue.id);
       venue.updateAddress(command.address);
     }
 
