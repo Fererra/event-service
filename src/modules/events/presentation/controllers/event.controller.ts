@@ -6,6 +6,7 @@ import { UpdateEventUseCase } from "../../application/commands/update-event.use-
 import { CancelEventUseCase } from "../../application/commands/cancel-event.use-case";
 import { DeleteEventUseCase } from "../../application/commands/delete-event.use-case";
 import { Event } from "../../domain/entities/event.entity";
+import { DomainError } from "../../../shared/domain/errors/domain.error";
 import {
   CreateEventDto,
   UpdateEventDto,
@@ -18,6 +19,9 @@ import { createAdminGuard } from "../../../auth/presentation/guards/admin.guard"
 import { TokenService } from "../../../auth/application/ports/token.service";
 
 function toEventResponse(event: Event): EventResponseDto {
+  if (event.id === null) {
+    throw new DomainError("Event id is missing");
+  }
   return {
     id: event.id,
     owner_id: event.ownerId,
@@ -84,7 +88,7 @@ export function registerEventRoutes(
         venueId: req.body.venue_id,
         tickets: req.body.tickets,
       });
-      reply.status(201).send({ event });
+      reply.status(201).send({ event: toEventResponse(event) });
     },
   );
 
@@ -102,7 +106,6 @@ export function registerEventRoutes(
           description: req.body.description,
           startTimestamp: req.body.start_timestamp ? new Date(req.body.start_timestamp) : undefined,
           endTimestamp: req.body.end_timestamp ? new Date(req.body.end_timestamp) : undefined,
-          status: req.body.status,
           venueId: req.body.venue_id,
         },
       });

@@ -1,8 +1,10 @@
 import { EventStatus } from "../../domain/value-objects/event-status.enum";
-import { TicketType } from "../../../tickets/domain/value-objects/ticket-type.enum";
+
+const ticketTypeValues = ["regular", "vip", "early_bird"] as const;
+type TicketTypeValue = (typeof ticketTypeValues)[number];
 
 export interface CreateTicketInlineDto {
-  type: TicketType;
+  type: TicketTypeValue;
   limit: number;
   price: number;
 }
@@ -23,7 +25,6 @@ export interface UpdateEventDto {
   description?: string;
   start_timestamp?: string;
   end_timestamp?: string;
-  status?: EventStatus;
   venue_id?: string;
 }
 
@@ -44,7 +45,7 @@ const ticketInlineSchema = {
   type: "object",
   required: ["type", "limit", "price"],
   properties: {
-    type: { type: "string", enum: Object.values(TicketType) },
+    type: { type: "string", enum: ticketTypeValues },
     limit: { type: "integer", minimum: 1 },
     price: { type: "number", minimum: 0 },
   },
@@ -85,8 +86,7 @@ export const updateEventSchema = {
       description: { type: "string" },
       start_timestamp: { type: "string", format: "date-time" },
       end_timestamp: { type: "string", format: "date-time" },
-      status: { type: "string", enum: Object.values(EventStatus) },
-      venue_id: { type: "string", minimum: 1 },
+      venue_id: { type: "string", minLength: 1 },
     },
   },
 } as const;
