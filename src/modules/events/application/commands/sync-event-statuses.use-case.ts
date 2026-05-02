@@ -1,6 +1,6 @@
 import { IEventRepository } from "../../domain/repositories/event.repository.interface";
 
-export class SyncEventStatusesUSeCase {
+export class SyncEventStatusesUseCase {
   constructor(private readonly eventsRepository: IEventRepository) {}
 
   async execute(): Promise<void> {

@@ -1,6 +1,5 @@
 import { EventFactory } from "../../domain/factories/event.factory";
 import { IEventRepository } from "../../domain/repositories/event.repository.interface";
-import { IVenueRepository } from "../../domain/repositories/venue.repository.interface";
 import {
   ITicketCreator,
   InlineTicketData,
@@ -23,40 +22,17 @@ export class CreateEventUseCase {
   constructor(
     private readonly eventFactory: EventFactory,
     private readonly eventRepository: IEventRepository,
-    private readonly venueRepository: IVenueRepository,
     private readonly ticketCreator: ITicketCreator,
   ) {}
 
   async execute(command: CreateEventCommand): Promise<Event> {
-    const venue = await this.venueRepository.findById(command.venueId);
-    if (!venue) {
-      throw new DomainError(`Venue not found`);
-    }
-
-    if (command.tickets && command.tickets.length > 0) {
-      if (command.tickets.length > 3) {
-        throw new DomainError("Cannot create more than 3 ticket types for an event");
-      }
-
-      const types = command.tickets.map((t) => t.type);
-      if (new Set(types).size !== types.length) {
-        throw new DomainError("Ticket types must be unique");
-      }
-
-      if (venue.capacity !== null) {
-        const totalLimit = command.tickets.reduce((sum, t) => sum + t.limit, 0);
-        if (totalLimit > venue.capacity) {
-          throw new DomainError(
-            `Total ticket limit (${totalLimit}) exceeds venue capacity (${venue.capacity})`,
-          );
-        }
-      }
-    }
-
     const event = await this.eventFactory.create(command);
     const savedEvent = await this.eventRepository.save(event);
 
     if (command.tickets && command.tickets.length > 0) {
+      if (savedEvent.id === null) {
+        throw new DomainError("Saved event id is missing");
+      }
       await this.ticketCreator.createTicketsForEvent(savedEvent.id, command.tickets);
     }
     return savedEvent;
