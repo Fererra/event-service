@@ -35,7 +35,7 @@ export interface VenueRouteGuards {
 }
 
 export function venueRoutes(
-  fastify: FastifyInstance,
+  app: FastifyInstance,
   useCases: VenueUseCases,
   guards: VenueRouteGuards,
 ) {
@@ -49,7 +49,7 @@ export function venueRoutes(
   const adminGuard = guards.adminGuard;
   const jwtGuard = guards.jwtGuard;
 
-  fastify.post<{ Body: CreateVenueDto }>(
+  app.post<{ Body: CreateVenueDto }>(
     "/venues",
     {
       schema: CreateVenueSchema,
@@ -67,12 +67,16 @@ export function venueRoutes(
     },
   );
 
-  fastify.get("/venues", { preHandler: [jwtGuard, adminGuard] }, async (request, reply) => {
-    const venues = await getAllVenuesUseCase.execute();
-    return reply.code(200).send(venues);
-  });
+  app.get(
+    "/venues",
+    { preHandler: [jwtGuard, adminGuard] },
+    async (request, reply) => {
+      const venues = await getAllVenuesUseCase.execute();
+      return reply.code(200).send(venues);
+    },
+  );
 
-  fastify.get<{ Params: GetVenueByIdDto["Params"] }>(
+  app.get<{ Params: GetVenueByIdDto["Params"] }>(
     "/venues/:venueId",
     {
       schema: GetVenueByIdSchema,
@@ -84,7 +88,7 @@ export function venueRoutes(
     },
   );
 
-  fastify.patch<{
+  app.patch<{
     Params: UpdateVenueDto["Params"];
     Body: UpdateVenueDto["Body"];
   }>(
@@ -107,7 +111,7 @@ export function venueRoutes(
     },
   );
 
-  fastify.delete<{ Params: DeleteVenueDto["Params"] }>(
+  app.delete<{ Params: DeleteVenueDto["Params"] }>(
     "/venues/:venueId",
     {
       schema: DeleteVenueSchema,
