@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { User } from "../../domain/entities/user.entity";
 import { RefreshToken } from "../../domain/entities/refresh-token.entity";
 import { Email } from "../../domain/value-objects/email.vo";
-import { UserRole } from "../../domain/value-objects/user-role.vo";
+import { UserRole } from "../../../../shared/domain/value-objects/user-role.enum";
 import { ConflictError } from "../../../../shared/domain/errors/domain.error";
 import { UserRepository } from "../../domain/repositories/user.repository";
 import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository";
@@ -36,9 +36,7 @@ export class SignupUseCase {
       throw new ConflictError(`Email ${email.value} is already registered`);
     }
 
-    const nicknameTaken = await this.userRepo.existsByNickname(
-      command.nickname,
-    );
+    const nicknameTaken = await this.userRepo.existsByNickname(command.nickname);
     if (nicknameTaken) {
       throw new ConflictError(`Nickname ${command.nickname} is already taken`);
     }
@@ -56,11 +54,7 @@ export class SignupUseCase {
 
     await this.userRepo.save(user);
 
-    const tokens = this.tokenService.generateTokenPair(
-      user.id,
-      user.email.value,
-      user.role,
-    );
+    const tokens = this.tokenService.generateTokenPair(user.id, user.email.value, user.role);
 
     const tokenHash = this.tokenService.hashToken(tokens.refreshToken);
     const refreshToken = RefreshToken.create({

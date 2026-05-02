@@ -1,6 +1,6 @@
 import { User } from "../../../domain/entities/user.entity";
 import { Email } from "../../../domain/value-objects/email.vo";
-import { parseUserRole } from "../../../domain/value-objects/user-role.vo";
+import { parseUserRole } from "../../../../../shared/domain/value-objects/user-role.enum";
 import { UserOrmEntity } from "../entities/user.orm-entity";
 
 export class UserMapper {
