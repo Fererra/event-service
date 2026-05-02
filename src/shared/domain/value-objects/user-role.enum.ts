@@ -1,4 +1,4 @@
-import { DomainError } from "../../../../shared/domain/errors/domain.error";
+import { DomainError } from "../errors/domain.error";
 
 export enum UserRole {
   USER = "user",

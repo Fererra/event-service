@@ -1,5 +1,5 @@
 import { FastifyRequest, FastifyReply } from "fastify";
-import { UserRole } from "../../domain/value-objects/user-role.vo";
+import { UserRole } from "../../../../shared/domain/value-objects/user-role.enum";
 
 export function createAdminGuard() {
   return async function adminGuard(request: FastifyRequest, reply: FastifyReply): Promise<void> {

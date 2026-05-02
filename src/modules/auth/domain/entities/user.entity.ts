@@ -1,5 +1,5 @@
 import { Email } from "../value-objects/email.vo";
-import { UserRole } from "../value-objects/user-role.vo";
+import { UserRole } from "../../../../shared/domain/value-objects/user-role.enum";
 
 export class User {
   private constructor(

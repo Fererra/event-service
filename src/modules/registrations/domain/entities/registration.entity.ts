@@ -1,3 +1,5 @@
+import { UserRole } from "../../../../shared/domain/value-objects/user-role.enum";
+
 export interface RegistrationProps {
   id: string;
   userId: string;
@@ -21,11 +23,7 @@ export class Registration {
     return this.props.registrationTimestamp;
   }
 
-  static create(props: {
-    id: string;
-    userId: string;
-    ticketId: number;
-  }): Registration {
+  static create(props: { id: string; userId: string; ticketId: number }): Registration {
     return new Registration({
       ...props,
       registrationTimestamp: new Date(),
@@ -34,5 +32,9 @@ export class Registration {
 
   static fromProps(props: RegistrationProps): Registration {
     return new Registration(props);
+  }
+
+  canBeCancelledBy(actorId: string, actorRole: UserRole): boolean {
+    return this.userId === actorId || actorRole === UserRole.ADMIN;
   }
 }

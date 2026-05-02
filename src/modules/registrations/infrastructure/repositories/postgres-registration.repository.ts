@@ -5,25 +5,18 @@ import { RegistrationOrmEntity } from "../orm/entities/registration.orm-entity";
 import { RegistrationMapper } from "../orm/mappers/registration.mapper";
 
 export class PostgresRegistrationRepository implements RegistrationRepository {
-  constructor(
-    private readonly ormRepository: Repository<RegistrationOrmEntity>,
-  ) {}
+  constructor(private readonly ormRepository: Repository<RegistrationOrmEntity>) {}
 
   async countByTicketId(ticketId: number): Promise<number> {
     return this.ormRepository.count({ where: { ticketId } });
   }
 
   async save(registration: Registration): Promise<Registration> {
-    const saved = await this.ormRepository.save(
-      RegistrationMapper.toOrm(registration),
-    );
+    const saved = await this.ormRepository.save(RegistrationMapper.toOrm(registration));
     return RegistrationMapper.toDomain(saved);
   }
 
-  async countByEventAndTicket(
-    eventId: number,
-    ticketId: number,
-  ): Promise<number> {
+  async countByEventAndTicket(eventId: number, ticketId: number): Promise<number> {
     return await this.ormRepository.count({
       where: {
         ticketId: ticketId,
@@ -45,10 +38,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
     return ormEntities.map((entity) => RegistrationMapper.toDomain(entity));
   }
 
-  async findByIdAndUserId(
-    id: string,
-    userId: string,
-  ): Promise<Registration | null> {
+  async findByIdAndUserId(id: string, userId: string): Promise<Registration | null> {
     const ormEntity = await this.ormRepository.findOne({
       where: { id, userId },
     });
@@ -65,10 +55,7 @@ export class PostgresRegistrationRepository implements RegistrationRepository {
     return ormEntities.map((orm) => RegistrationMapper.toDomain(orm));
   }
 
-  async findByIdAndEventId(
-    id: string,
-    eventId: number,
-  ): Promise<Registration | null> {
+  async findByIdAndEventId(id: string, eventId: number): Promise<Registration | null> {
     const ormEntity = await this.ormRepository
       .createQueryBuilder("registration")
       .innerJoin("registration.ticket", "ticket")

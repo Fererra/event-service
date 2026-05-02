@@ -7,27 +7,27 @@ import { GetEventRegistrationUseCase } from "../../application/use-cases/get-eve
 import { CancelRegistrationUseCase } from "../../application/use-cases/cancel-registration.use-case";
 
 import {
-  CreateRegistrationDto,
-  CreateRegistrationSchema,
-  GetUserRegistrationsSchema,
-  GetUserRegistrationsDto,
-  GetUserRegistrationSchema,
-  GetUserRegistrationDto,
-  GetEventRegistrationsSchema,
-  GetEventRegistrationsDto,
-  GetEventRegistrationSchema,
-  GetEventRegistrationDto,
+  CancelRegistrationRoute,
   CancelRegistrationSchema,
-  CancelRegistrationDto,
+  CreateRegistrationRoute,
+  CreateRegistrationSchema,
+  GetEventRegistrationRoute,
+  GetEventRegistrationSchema,
+  GetEventRegistrationsRoute,
+  GetEventRegistrationsSchema,
+  GetRegistrationsCountRoute,
   GetRegistrationsCountSchema,
-  GetRegistrationsCountDto,
+  GetUserRegistrationRoute,
+  GetUserRegistrationSchema,
+  GetUserRegistrationsRoute,
+  GetUserRegistrationsSchema,
 } from "../../presentation/dto/registration.dto";
 import { RegistrationDtoMapper } from "../mappers/registration-dto.mapper";
 import { createAdminGuard } from "../../../auth/presentation/guards/admin.guard";
 import { createJwtGuard } from "../../../auth/presentation/guards/jwt.guard";
-import { JwtTokenService } from "../../../auth/infrastructure/services/jwt-token.service";
-import { UnauthorizedError } from "../../../../shared/domain/errors/domain.error";
 import { GetRegistrationsCountUseCase } from "../../application/use-cases/get-registrations-count.use-case";
+import { TokenService } from "../../../auth/application/ports/token.service";
+import { parseUserRole } from "../../../../shared/domain/value-objects/user-role.enum";
 
 export function registerRegistrationRoutes(
   app: FastifyInstance,
@@ -38,12 +38,12 @@ export function registerRegistrationRoutes(
   getEventRegistrationUseCase: GetEventRegistrationUseCase,
   cancelRegistrationUseCase: CancelRegistrationUseCase,
   getRegistrationsCountUseCase: GetRegistrationsCountUseCase,
-  tokenService: JwtTokenService,
+  tokenService: TokenService,
 ) {
   const adminGuard = createAdminGuard();
   const jwtGuard = createJwtGuard(tokenService);
 
-  app.post<CreateRegistrationDto>(
+  app.post<CreateRegistrationRoute>(
     "/events/:eventId/registrations",
     { preHandler: jwtGuard, schema: CreateRegistrationSchema },
     async (req, reply) => {
@@ -60,8 +60,7 @@ export function registerRegistrationRoutes(
           id: registration.id,
           user_id: registration.userId,
           ticket_id: registration.ticketId,
-          registration_timestamp:
-            registration.registrationTimestamp.toISOString(),
+          registration_timestamp: registration.registrationTimestamp.toISOString(),
         },
         event: {
           event_id: Number(req.params.eventId),
@@ -70,7 +69,7 @@ export function registerRegistrationRoutes(
     },
   );
 
-  app.get<GetUserRegistrationsDto>(
+  app.get<GetUserRegistrationsRoute>(
     "/users/:userId/registrations",
     { preHandler: [jwtGuard], schema: GetUserRegistrationsSchema },
     async (req, reply) => {
@@ -79,46 +78,40 @@ export function registerRegistrationRoutes(
       const registrations = await getUserRegistrationsUseCase.execute(
         req.params.userId,
         user.id,
-        user.role,
+        parseUserRole(user.role),
       );
 
       return reply.send(RegistrationDtoMapper.toDtoList(registrations));
     },
   );
 
-  app.get<GetUserRegistrationDto>(
+  app.get<GetUserRegistrationRoute>(
     "/users/:userId/registrations/:registrationId",
     { preHandler: [jwtGuard], schema: GetUserRegistrationSchema },
     async (req, reply) => {
       const user = (req as any).user;
 
-      if (user.role !== "admin" && user.id !== req.params.userId)
-        throw new UnauthorizedError(
-          "Forbidden: You cannot access data of another user",
-        );
-
       const registration = await getUserRegistrationUseCase.execute(
         req.params.registrationId,
         req.params.userId,
+        parseUserRole(user.role),
       );
 
       return reply.send(RegistrationDtoMapper.toDto(registration));
     },
   );
 
-  app.get<GetEventRegistrationsDto>(
+  app.get<GetEventRegistrationsRoute>(
     "/events/:eventId/registrations",
     { preHandler: [jwtGuard, adminGuard], schema: GetEventRegistrationsSchema },
     async (req, reply) => {
-      const registrations = await getEventRegistrationsUseCase.execute(
-        Number(req.params.eventId),
-      );
+      const registrations = await getEventRegistrationsUseCase.execute(Number(req.params.eventId));
 
       return reply.send(RegistrationDtoMapper.toDtoList(registrations));
     },
   );
 
-  app.get<GetEventRegistrationDto>(
+  app.get<GetEventRegistrationRoute>(
     "/events/:eventId/registrations/:registrationId",
     { preHandler: [jwtGuard, adminGuard], schema: GetEventRegistrationSchema },
     async (req, reply) => {
@@ -131,14 +124,13 @@ export function registerRegistrationRoutes(
     },
   );
 
-  app.get<GetRegistrationsCountDto>(
+  app.get<GetRegistrationsCountRoute>(
     "/events/:eventId/tickets/:ticketId/registrations/count",
     { preHandler: [jwtGuard, adminGuard], schema: GetRegistrationsCountSchema },
     async (req, reply) => {
       const count = await getRegistrationsCountUseCase.execute(
-        req.params.eventId,
-        req.params.ticketId,
-        (req as any).user.role,
+        Number(req.params.eventId),
+        Number(req.params.ticketId),
       );
 
       return reply.send({
@@ -149,7 +141,7 @@ export function registerRegistrationRoutes(
     },
   );
 
-  app.delete<CancelRegistrationDto>(
+  app.delete<CancelRegistrationRoute>(
     "/users/:userId/registrations/:registrationId",
     { preHandler: [jwtGuard], schema: CancelRegistrationSchema },
     async (req, reply) => {
@@ -158,7 +150,7 @@ export function registerRegistrationRoutes(
       await cancelRegistrationUseCase.execute(
         req.params.registrationId,
         user.id,
-        user.role,
+        parseUserRole(user.role),
       );
 
       return reply.status(204).send();
