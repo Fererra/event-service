@@ -6,7 +6,7 @@ import { UpdateEventUseCase } from "../../application/commands/update-event.use-
 import { CancelEventUseCase } from "../../application/commands/cancel-event.use-case";
 import { DeleteEventUseCase } from "../../application/commands/delete-event.use-case";
 import { Event } from "../../domain/entities/event.entity";
-import { DomainError } from "../../../shared/domain/errors/domain.error";
+import { DomainError } from "../../../../shared/domain/errors/domain.error";
 import {
   CreateEventDto,
   UpdateEventDto,
