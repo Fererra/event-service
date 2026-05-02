@@ -1,4 +1,4 @@
-import { FastifyInstance, preHandlerHookHandler } from "fastify";
+import { FastifyInstance, FastifyRequest, preHandlerHookHandler } from "fastify";
 import { CreateRegistrationUseCase } from "../../application/use-cases/create-registration.use-case";
 import { GetUserRegistrationsUseCase } from "../../application/use-cases/get-user-registrations.use-case";
 import { GetUserRegistrationUseCase } from "../../application/use-cases/get-user-registration.use-case";
@@ -25,6 +25,13 @@ import {
 import { RegistrationDtoMapper } from "../mappers/registration-dto.mapper";
 import { GetRegistrationsCountUseCase } from "../../application/use-cases/get-registrations-count.use-case";
 import { parseUserRole } from "../../../../shared/domain/value-objects/user-role.enum";
+
+type AuthenticatedRequest = FastifyRequest & {
+  user: {
+    id: string;
+    role: string;
+  };
+};
 
 export interface RegistrationUseCases {
   createRegistrationUseCase: CreateRegistrationUseCase;
@@ -62,7 +69,7 @@ export function registerRegistrationRoutes(
     "/events/:eventId/registrations",
     { preHandler: jwtGuard, schema: CreateRegistrationSchema },
     async (req, reply) => {
-      const user = (req as any).user;
+      const user = (req as AuthenticatedRequest).user;
 
       const registration = await createRegistrationUseCase.execute({
         eventId: Number(req.params.eventId),
@@ -88,7 +95,7 @@ export function registerRegistrationRoutes(
     "/users/:userId/registrations",
     { preHandler: [jwtGuard], schema: GetUserRegistrationsSchema },
     async (req, reply) => {
-      const user = (req as any).user;
+      const user = (req as AuthenticatedRequest).user;
 
       const registrations = await getUserRegistrationsUseCase.execute(
         req.params.userId,
@@ -104,7 +111,7 @@ export function registerRegistrationRoutes(
     "/users/:userId/registrations/:registrationId",
     { preHandler: [jwtGuard], schema: GetUserRegistrationSchema },
     async (req, reply) => {
-      const user = (req as any).user;
+      const user = (req as AuthenticatedRequest).user;
 
       const registration = await getUserRegistrationUseCase.execute(
         req.params.registrationId,
@@ -160,7 +167,7 @@ export function registerRegistrationRoutes(
     "/users/:userId/registrations/:registrationId",
     { preHandler: [jwtGuard], schema: CancelRegistrationSchema },
     async (req, reply) => {
-      const user = (req as any).user;
+      const user = (req as AuthenticatedRequest).user;
 
       await cancelRegistrationUseCase.execute(
         req.params.registrationId,
