@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, preHandlerHookHandler } from "fastify";
 import {
   CreateVenueUseCase,
   CreateVenueCommand,
@@ -20,9 +20,6 @@ import {
   DeleteVenueSchema,
   DeleteVenueDto,
 } from "../dto/venue.dto";
-import { createAdminGuard } from "../../../auth/presentation/guards/admin.guard";
-import { createJwtGuard } from "../../../auth/presentation/guards/jwt.guard";
-import { TokenService } from "../../../auth/application/ports/token.service";
 
 export interface VenueUseCases {
   createVenueUseCase: CreateVenueUseCase;
@@ -32,10 +29,15 @@ export interface VenueUseCases {
   deleteVenueUseCase: DeleteVenueUseCase;
 }
 
+export interface VenueRouteGuards {
+  jwtGuard: preHandlerHookHandler;
+  adminGuard: preHandlerHookHandler;
+}
+
 export function venueRoutes(
   fastify: FastifyInstance,
   useCases: VenueUseCases,
-  tokenService: TokenService,
+  guards: VenueRouteGuards,
 ) {
   const {
     createVenueUseCase,
@@ -44,8 +46,8 @@ export function venueRoutes(
     updateVenueUseCase,
     deleteVenueUseCase,
   } = useCases;
-  const adminGuard = createAdminGuard();
-  const jwtGuard = createJwtGuard(tokenService);
+  const adminGuard = guards.adminGuard;
+  const jwtGuard = guards.jwtGuard;
 
   fastify.post<{ Body: CreateVenueDto }>(
     "/venues",

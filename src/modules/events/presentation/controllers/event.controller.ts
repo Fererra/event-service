@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { GetEventsUseCase } from "../../application/queries/get-events.use-case";
 import { GetEventUseCase } from "../../application/queries/get-event.use.case";
 import { CreateEventUseCase } from "../../application/commands/create-event.use-case";
@@ -14,9 +14,6 @@ import {
   createEventSchema,
   updateEventSchema,
 } from "../dtos/event.dto";
-import { createJwtGuard } from "../../../auth/presentation/guards/jwt.guard";
-import { createAdminGuard } from "../../../auth/presentation/guards/admin.guard";
-import { TokenService } from "../../../auth/application/ports/token.service";
 
 function toEventResponse(event: Event): EventResponseDto {
   if (event.id === null) {
@@ -45,10 +42,15 @@ export interface EventUseCases {
   deleteEventUseCase: DeleteEventUseCase;
 }
 
+export interface EventRouteGuards {
+  jwtGuard: preHandlerHookHandler;
+  adminGuard: preHandlerHookHandler;
+}
+
 export function registerEventRoutes(
   app: FastifyInstance,
   useCases: EventUseCases,
-  tokenService: TokenService,
+  guards: EventRouteGuards,
 ): void {
   const {
     getEventsUseCase,
@@ -58,10 +60,7 @@ export function registerEventRoutes(
     cancelEventUseCase,
     deleteEventUseCase,
   } = useCases;
-
-  const jwtGuard = createJwtGuard(tokenService);
-  const adminGuard = createAdminGuard();
-  const adminOnly = [jwtGuard, adminGuard];
+  const adminOnly = [guards.jwtGuard, guards.adminGuard];
 
   app.get("/events", async (req, reply) => {
     const events = await getEventsUseCase.execute();

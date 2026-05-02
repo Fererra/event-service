@@ -4,7 +4,7 @@ import {
   NotFoundError,
   UnauthorizedError,
   ConflictError,
-} from "../../../../shared/domain/errors/domain.error";
+} from "../domain/errors/domain.error";
 
 export function registerExceptionHandlers(app: FastifyInstance): void {
   app.setErrorHandler((error, request, reply) => {

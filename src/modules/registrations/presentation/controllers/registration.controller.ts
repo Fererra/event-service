@@ -1,4 +1,4 @@
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { CreateRegistrationUseCase } from "../../application/use-cases/create-registration.use-case";
 import { GetUserRegistrationsUseCase } from "../../application/use-cases/get-user-registrations.use-case";
 import { GetUserRegistrationUseCase } from "../../application/use-cases/get-user-registration.use-case";
@@ -23,25 +23,40 @@ import {
   GetUserRegistrationsSchema,
 } from "../../presentation/dto/registration.dto";
 import { RegistrationDtoMapper } from "../mappers/registration-dto.mapper";
-import { createAdminGuard } from "../../../auth/presentation/guards/admin.guard";
-import { createJwtGuard } from "../../../auth/presentation/guards/jwt.guard";
 import { GetRegistrationsCountUseCase } from "../../application/use-cases/get-registrations-count.use-case";
-import { TokenService } from "../../../auth/application/ports/token.service";
 import { parseUserRole } from "../../../../shared/domain/value-objects/user-role.enum";
+
+export interface RegistrationUseCases {
+  createRegistrationUseCase: CreateRegistrationUseCase;
+  getUserRegistrationsUseCase: GetUserRegistrationsUseCase;
+  getUserRegistrationUseCase: GetUserRegistrationUseCase;
+  getEventRegistrationsUseCase: GetEventRegistrationsUseCase;
+  getEventRegistrationUseCase: GetEventRegistrationUseCase;
+  cancelRegistrationUseCase: CancelRegistrationUseCase;
+  getRegistrationsCountUseCase: GetRegistrationsCountUseCase;
+}
+
+export interface RegistrationRouteGuards {
+  jwtGuard: preHandlerHookHandler;
+  adminGuard: preHandlerHookHandler;
+}
 
 export function registerRegistrationRoutes(
   app: FastifyInstance,
-  createRegistrationUseCase: CreateRegistrationUseCase,
-  getUserRegistrationsUseCase: GetUserRegistrationsUseCase,
-  getUserRegistrationUseCase: GetUserRegistrationUseCase,
-  getEventRegistrationsUseCase: GetEventRegistrationsUseCase,
-  getEventRegistrationUseCase: GetEventRegistrationUseCase,
-  cancelRegistrationUseCase: CancelRegistrationUseCase,
-  getRegistrationsCountUseCase: GetRegistrationsCountUseCase,
-  tokenService: TokenService,
+  useCases: RegistrationUseCases,
+  guards: RegistrationRouteGuards,
 ) {
-  const adminGuard = createAdminGuard();
-  const jwtGuard = createJwtGuard(tokenService);
+  const {
+    createRegistrationUseCase,
+    getUserRegistrationsUseCase,
+    getUserRegistrationUseCase,
+    getEventRegistrationsUseCase,
+    getEventRegistrationUseCase,
+    cancelRegistrationUseCase,
+    getRegistrationsCountUseCase,
+  } = useCases;
+  const adminGuard = guards.adminGuard;
+  const jwtGuard = guards.jwtGuard;
 
   app.post<CreateRegistrationRoute>(
     "/events/:eventId/registrations",

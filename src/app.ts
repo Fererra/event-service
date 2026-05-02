@@ -7,12 +7,14 @@ import { PostgresUserRepository } from "./modules/auth/infrastructure/repositori
 import { PostgresRefreshTokenRepository } from "./modules/auth/infrastructure/repositories/postgres-refresh-token.repository";
 import { Argon2PasswordService } from "./modules/auth/infrastructure/services/argon-password.service";
 import { JwtTokenService } from "./modules/auth/infrastructure/services/jwt-token.service";
+import { createJwtGuard } from "./modules/auth/presentation/guards/jwt.guard";
+import { createAdminGuard } from "./modules/auth/presentation/guards/admin.guard";
 import { SignupUseCase } from "./modules/auth/application/commands/signup.use-case";
 import { LoginUseCase } from "./modules/auth/application/commands/login.use-case";
 import { LogoutUseCase } from "./modules/auth/application/commands/logout.use-case";
 import { RefreshTokensUseCase } from "./modules/auth/application/commands/refresh-tokens.use-case";
 import { registerAuthRoutes } from "./modules/auth/presentation/controllers/auth.controller";
-import { registerExceptionHandlers } from "./modules/auth/presentation/hooks/exception.handler";
+import { registerExceptionHandlers } from "./shared/presentation/exception.handler";
 import { UserOrmEntity } from "./modules/auth/infrastructure/orm/entities/user.orm-entity";
 import { RefreshTokenOrmEntity } from "./modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
 
@@ -101,6 +103,9 @@ async function bootstrap() {
 
   const passwordService = new Argon2PasswordService();
   const tokenService = new JwtTokenService(config.jwt);
+  const jwtGuard = createJwtGuard(tokenService);
+  const adminGuard = createAdminGuard();
+  const guards = { jwtGuard, adminGuard };
 
   const signupUseCase = new SignupUseCase(
     userRepository,
@@ -200,7 +205,7 @@ async function bootstrap() {
     eventInfoRepository,
   );
 
-  // Events create use case
+  // Events create use case depends on tickets for TicketCreatorAdapter
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
   const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, ticketCreator);
 
@@ -211,6 +216,8 @@ async function bootstrap() {
   // Fastify
   const app = Fastify({ logger: true });
 
+  registerExceptionHandlers(app);
+
   venueRoutes(
     app,
     {
@@ -220,10 +227,8 @@ async function bootstrap() {
       updateVenueUseCase,
       deleteVenueUseCase,
     },
-    tokenService,
+    guards,
   );
-
-  registerExceptionHandlers(app);
 
   registerAuthRoutes(app, {
     signupUseCase,
@@ -242,7 +247,7 @@ async function bootstrap() {
       cancelEventUseCase,
       deleteEventUseCase,
     },
-    tokenService,
+    guards,
   );
 
   registerTicketRoutes(
@@ -253,19 +258,21 @@ async function bootstrap() {
       updateTicketUseCase,
       deleteTicketUseCase,
     },
-    tokenService,
+    guards,
   );
 
   registerRegistrationRoutes(
     app,
-    createRegistrationUseCase,
-    getUserRegistrationsUseCase,
-    getUserRegistrationUseCase,
-    getEventRegistrationsUseCase,
-    getEventRegistrationUseCase,
-    cancelRegistrationUseCase,
-    getRegistrationsCountUseCase,
-    tokenService,
+    {
+      createRegistrationUseCase,
+      getUserRegistrationsUseCase,
+      getUserRegistrationUseCase,
+      getEventRegistrationsUseCase,
+      getEventRegistrationUseCase,
+      cancelRegistrationUseCase,
+      getRegistrationsCountUseCase,
+    },
+    guards,
   );
 
   await app.listen({ port: config.port, host: "0.0.0.0" });
