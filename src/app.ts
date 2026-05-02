@@ -68,6 +68,8 @@ import { registerRegistrationRoutes } from "./modules/registrations/presentation
 import { RegistrationOrmEntity } from "./modules/registrations/infrastructure/orm/entities/registration.orm-entity";
 import { CancelRegistrationUseCase } from "./modules/registrations/application/use-cases/cancel-registration.use-case";
 import { GetRegistrationsCountUseCase } from "./modules/registrations/application/use-cases/get-registrations-count.use-case";
+import { EventInfoRepositoryAdapter } from "./modules/registrations/infrastructure/adapters/event-info.repository.adapter";
+import { TicketInfoRepositoryAdapter } from "./modules/registrations/infrastructure/adapters/ticket-info.repository.adapter";
 
 async function bootstrap() {
   const config = {
@@ -173,10 +175,12 @@ async function bootstrap() {
   const registrationOrmRepository = dataSource.getRepository(RegistrationOrmEntity);
   const registrationRepository = new PostgresRegistrationRepository(registrationOrmRepository);
 
+  const eventInfoRepository = new EventInfoRepositoryAdapter(eventRepository);
+  const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketRepository);
   const registrationFactory = new RegistrationFactory(
     registrationRepository,
-    ticketRepository,
-    eventRepository,
+    ticketInfoRepository,
+    eventInfoRepository,
   );
 
   const createRegistrationUseCase = new CreateRegistrationUseCase(
@@ -190,8 +194,8 @@ async function bootstrap() {
   const cancelRegistrationUseCase = new CancelRegistrationUseCase(registrationRepository);
   const getRegistrationsCountUseCase = new GetRegistrationsCountUseCase(
     registrationRepository,
-    ticketRepository,
-    eventRepository,
+    ticketInfoRepository,
+    eventInfoRepository,
   );
 
   // Events create use case
