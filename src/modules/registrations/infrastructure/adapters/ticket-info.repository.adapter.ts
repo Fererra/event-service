@@ -11,7 +11,7 @@ export class TicketInfoRepositoryAdapter implements ITicketInfoRepository {
     const ticket = await this.ticketRepository.findById(id);
     if (!ticket) return null;
     return {
-      id: ticket.id,
+      id: ticket.persistedId,
       eventId: ticket.eventId,
       limit: ticket.limit,
     };
