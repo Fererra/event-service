@@ -1,18 +1,14 @@
 import { FastifyRequest, FastifyReply } from "fastify";
 import { TokenService } from "../../application/ports/token.service";
 import { UnauthorizedError } from "../../../../shared/domain/errors/domain.error";
+import { AuthenticatedRequest } from "../../../../shared/presentation/authenicated-request.type";
 
 export function createJwtGuard(tokenService: TokenService) {
-  return async function jwtGuard(
-    request: FastifyRequest,
-    reply: FastifyReply,
-  ): Promise<void> {
+  return async function jwtGuard(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     const authHeader = request.headers["authorization"];
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      reply
-        .status(401)
-        .send({ error: "Missing or invalid Authorization header" });
+      reply.status(401).send({ error: "Missing or invalid Authorization header" });
       return;
     }
 
@@ -25,7 +21,7 @@ export function createJwtGuard(tokenService: TokenService) {
         throw new UnauthorizedError("Invalid token type");
       }
 
-      (request as any).user = {
+      (request as AuthenticatedRequest).user = {
         id: payload.sub,
         email: payload.email,
         role: payload.role,

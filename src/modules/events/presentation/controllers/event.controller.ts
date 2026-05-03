@@ -14,6 +14,7 @@ import {
   createEventSchema,
   updateEventSchema,
 } from "../dtos/event.dto";
+import { AuthenticatedRequest } from "../../../../shared/presentation/authenicated-request.type";
 
 function toEventResponse(event: Event): EventResponseDto {
   if (event.id === null) {
@@ -76,7 +77,7 @@ export function registerEventRoutes(
     "/events",
     { preHandler: adminOnly, schema: createEventSchema },
     async (req, reply) => {
-      const user = (req as any).user;
+      const user = (req as AuthenticatedRequest).user;
       const event = await createEventUseCase.execute({
         ownerId: user.id,
         name: req.body.name,
@@ -95,7 +96,7 @@ export function registerEventRoutes(
     "/events/:eventId",
     { preHandler: adminOnly, schema: updateEventSchema },
     async (req, reply) => {
-      const user = (req as any).user;
+      const user = (req as AuthenticatedRequest).user;
       await updateEventUseCase.execute({
         eventId: Number(req.params.eventId),
         requestingUserId: user.id,
@@ -116,7 +117,7 @@ export function registerEventRoutes(
     "/events/:eventId/cancel",
     { preHandler: adminOnly },
     async (req, reply) => {
-      const user = (req as any).user;
+      const user = (req as AuthenticatedRequest).user;
       await cancelEventUseCase.execute({
         eventId: Number(req.params.eventId),
         requestingUserId: user.id,
@@ -129,7 +130,7 @@ export function registerEventRoutes(
     "/events/:eventId",
     { preHandler: adminOnly },
     async (req, reply) => {
-      const user = (req as any).user;
+      const user = (req as AuthenticatedRequest).user;
       await deleteEventUseCase.execute({
         eventId: Number(req.params.eventId),
         requestingUserId: user.id,

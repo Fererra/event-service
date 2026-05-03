@@ -1,4 +1,4 @@
-import { FastifyInstance, FastifyRequest, preHandlerHookHandler } from "fastify";
+import { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { CreateRegistrationUseCase } from "../../application/use-cases/create-registration.use-case";
 import { GetUserRegistrationsUseCase } from "../../application/use-cases/get-user-registrations.use-case";
 import { GetUserRegistrationUseCase } from "../../application/use-cases/get-user-registration.use-case";
@@ -25,13 +25,7 @@ import {
 import { RegistrationDtoMapper } from "../mappers/registration-dto.mapper";
 import { GetRegistrationsCountUseCase } from "../../application/use-cases/get-registrations-count.use-case";
 import { parseUserRole } from "../../../../shared/domain/value-objects/user-role.enum";
-
-type AuthenticatedRequest = FastifyRequest & {
-  user: {
-    id: string;
-    role: string;
-  };
-};
+import { AuthenticatedRequest } from "../../../../shared/presentation/authenicated-request.type";
 
 export interface RegistrationUseCases {
   createRegistrationUseCase: CreateRegistrationUseCase;
