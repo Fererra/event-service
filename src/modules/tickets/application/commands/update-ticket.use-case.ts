@@ -33,7 +33,10 @@ export class UpdateTicketUseCase {
     }
 
     if (command.limit !== undefined) {
-      const soldCount = await this.registrationCountRepository.countByTicketId(command.ticketId);
+      const soldCount = await this.registrationCountRepository.countByTicketId(
+        command.eventId,
+        command.ticketId,
+      );
       if (command.limit < soldCount) {
         throw new DomainError(
           `Cannot set limit to ${command.limit} as there are already ${soldCount} ticket(s) sold`,

@@ -48,7 +48,7 @@ import { EventCronJobs } from "./modules/events/presentation/cron/event.cron";
 
 // Tickets imports
 import { TicketOrmEntity } from "./modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
-import { PostgresRegistrationCountRepository } from "./modules/tickets/infrastructure/repositories/postgres-registration-count.repository";
+import { RegistrationModuleAdapter as TicketRegistrationModuleAdapter } from "./modules/tickets/infrastructure/adapters/registartion-module.adapter";
 import { PostgresTicketRepository } from "./modules/tickets/infrastructure/repositories/postgres-ticket.repository";
 import { VenueModuleAdapter as TicketVenueModuleAdapter } from "./modules/tickets/infrastructure/adapters/venue-module.adapter";
 import { EventLookupAdapter } from "./modules/tickets/infrastructure/adapters/event-lookup.adapter";
@@ -155,7 +155,6 @@ async function bootstrap() {
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
   const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdUseCase);
-  const registrationCountRepository = new PostgresRegistrationCountRepository(dataSource);
   const eventLookupAdapter = new EventLookupAdapter(getEventUseCase);
 
   const ticketFactory = new TicketFactory(ticketRepository, ticketVenueAdapter);
@@ -165,17 +164,6 @@ async function bootstrap() {
     ticketFactory,
     ticketRepository,
     eventLookupAdapter,
-  );
-  const updateTicketUseCase = new UpdateTicketUseCase(
-    ticketRepository,
-    eventLookupAdapter,
-    ticketVenueAdapter,
-    registrationCountRepository,
-  );
-  const deleteTicketUseCase = new DeleteTicketUseCase(
-    ticketRepository,
-    eventLookupAdapter,
-    registrationCountRepository,
   );
 
   // Registrations
@@ -208,6 +196,22 @@ async function bootstrap() {
   // Events create use case depends on tickets for TicketCreatorAdapter
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
   const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, ticketCreator);
+
+  // Tickets update and delete use cases depend on registration for ticketRegistrationAdapter
+  const ticketRegistrationAdapter = new TicketRegistrationModuleAdapter(
+    getRegistrationsCountUseCase,
+  );
+  const updateTicketUseCase = new UpdateTicketUseCase(
+    ticketRepository,
+    eventLookupAdapter,
+    ticketVenueAdapter,
+    ticketRegistrationAdapter,
+  );
+  const deleteTicketUseCase = new DeleteTicketUseCase(
+    ticketRepository,
+    eventLookupAdapter,
+    ticketRegistrationAdapter,
+  );
 
   // Cron Job
   const eventCronJobs = new EventCronJobs(syncEventStatusesUseCase);

@@ -28,7 +28,10 @@ export class DeleteTicketUseCase {
       );
     }
 
-    const soldCount = await this.registrationCountRepository.countByTicketId(command.ticketId);
+    const soldCount = await this.registrationCountRepository.countByTicketId(
+      command.eventId,
+      command.ticketId,
+    );
     if (soldCount > 0) {
       throw new DomainError(
         `Cannot delete ticket with id ${command.ticketId} as there are already ${soldCount} ticket(s) sold`,

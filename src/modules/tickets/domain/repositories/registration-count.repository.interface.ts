@@ -1,3 +1,3 @@
 export interface IRegistrationCountRepository {
-  countByTicketId(ticketId: number): Promise<number>;
+  countByTicketId(eventId: number, ticketId: number): Promise<number>;
 }
