@@ -33,10 +33,11 @@ import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venu
 // Events imports
 import { EventOrmEntity } from "./modules/events/infrastructure/orm/entities/event.orm-entity";
 import { PostgresEventRepository } from "./modules/events/infrastructure/repositories/postgres-event.repository";
+import { PostgresEventReadRepository } from "./modules/events/infrastructure/repositories/postgres-event-read.repository";
 import { VenueModuleAdapter as EventVenueModuleAdapter } from "./modules/events/infrastructure/adapters/venue-module.adapter";
 import { TicketCreatorAdapter } from "./modules/events/infrastructure/adapters/ticket-creator.adapter";
 import { EventFactory } from "./modules/events/domain/factories/event.factory";
-import { GetEventUseCase } from "./modules/events/application/queries/get-event.use.case";
+import { GetEventUseCase } from "./modules/events/application/queries/get-event.use-case";
 import { GetEventsUseCase } from "./modules/events/application/queries/get-events.use-case";
 import { UpdateEventUseCase } from "./modules/events/application/commands/update-event.use-case";
 import { CancelEventUseCase } from "./modules/events/application/commands/cancel-event.use-case";
@@ -141,12 +142,17 @@ async function bootstrap() {
 
   // Events
   const eventRepository = new PostgresEventRepository(dataSource.getRepository(EventOrmEntity));
+  const eventReadRepository = new PostgresEventReadRepository(
+    dataSource.getRepository(EventOrmEntity),
+  );
+
   const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdUseCase);
 
   const eventFactory = new EventFactory(eventVenueAdapter);
 
-  const getEventsUseCase = new GetEventsUseCase(eventRepository);
-  const getEventUseCase = new GetEventUseCase(eventRepository);
+  const getEventsUseCase = new GetEventsUseCase(eventReadRepository);
+  const getEventUseCase = new GetEventUseCase(eventReadRepository);
+
   const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventVenueAdapter);
   const cancelEventUseCase = new CancelEventUseCase(eventRepository);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);

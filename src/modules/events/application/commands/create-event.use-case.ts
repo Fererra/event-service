@@ -5,7 +5,6 @@ import {
   InlineTicketData,
 } from "../../domain/repositories/ticket-creator.interface";
 import { DomainError } from "../../../../shared/domain/errors/domain.error";
-import { Event } from "../../domain/entities/event.entity";
 
 export interface CreateEventCommand {
   ownerId: string;
@@ -25,16 +24,17 @@ export class CreateEventUseCase {
     private readonly ticketCreator: ITicketCreator,
   ) {}
 
-  async execute(command: CreateEventCommand): Promise<Event> {
+  async execute(command: CreateEventCommand): Promise<number> {
     const event = await this.eventFactory.create(command);
     const savedEvent = await this.eventRepository.save(event);
 
+    if (savedEvent.id === null) {
+      throw new DomainError("Saved event id is missing");
+    }
+
     if (command.tickets && command.tickets.length > 0) {
-      if (savedEvent.id === null) {
-        throw new DomainError("Saved event id is missing");
-      }
       await this.ticketCreator.createTicketsForEvent(savedEvent.id, command.tickets);
     }
-    return savedEvent;
+    return savedEvent.id;
   }
 }
