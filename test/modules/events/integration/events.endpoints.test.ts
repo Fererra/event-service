@@ -14,7 +14,7 @@ describe("Events Endpoints (Integration, in-memory)", () => {
     await app.close();
   });
 
-  it("POST /events -> 201 and returns created event", async () => {
+  it("POST /events -> 201 and returns id", async () => {
     const res = await app.inject({
       method: "POST",
       url: "/events",
@@ -31,11 +31,11 @@ describe("Events Endpoints (Integration, in-memory)", () => {
 
     expect(res.statusCode).toBe(201);
     const body = res.json();
-    expect(body.event).toBeDefined();
-    expect(body.event.id).toBeDefined();
+    expect(body.id).toBeDefined();
+    expect(typeof body.id).toBe("number");
   });
 
-  it("GET /events returns list", async () => {
+  it("GET /events returns list with read model fields", async () => {
     await app.inject({
       method: "POST",
       url: "/events",
@@ -54,6 +54,8 @@ describe("Events Endpoints (Integration, in-memory)", () => {
     const arr = res.json();
     expect(Array.isArray(arr)).toBe(true);
     expect(arr.length).toBeGreaterThanOrEqual(1);
+    expect(arr[0].owner_id).toBeDefined();
+    expect(arr[0].start_timestamp).toBeDefined();
   });
 
   it("PATCH /events/:id/cancel -> 204", async () => {
@@ -69,7 +71,7 @@ describe("Events Endpoints (Integration, in-memory)", () => {
         venue_id: "00000000-0000-0000-0000-000000000001",
       },
     });
-    const id = create.json().event.id;
+    const id = create.json().id;
     const res = await app.inject({ method: "PATCH", url: `/events/${id}/cancel` });
     expect(res.statusCode).toBe(204);
   });
@@ -87,7 +89,7 @@ describe("Events Endpoints (Integration, in-memory)", () => {
         venue_id: "00000000-0000-0000-0000-000000000001",
       },
     });
-    const id = create.json().event.id;
+    const id = create.json().id;
     const res = await app.inject({
       method: "PATCH",
       url: `/events/${id}`,
@@ -109,7 +111,7 @@ describe("Events Endpoints (Integration, in-memory)", () => {
         venue_id: "00000000-0000-0000-0000-000000000001",
       },
     });
-    const id = create.json().event.id;
+    const id = create.json().id;
 
     const e = await ctx.eventRepo.findById(id);
     if (e) {

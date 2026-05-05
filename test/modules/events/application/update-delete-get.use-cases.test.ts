@@ -1,7 +1,7 @@
 import { UpdateEventUseCase } from "../../../../src/modules/events/application/commands/update-event.use-case";
 import { DeleteEventUseCase } from "../../../../src/modules/events/application/commands/delete-event.use-case";
-import { GetEventUseCase } from "../../../../src/modules/events/application/queries/get-event.use.case";
-import { InMemoryEventRepository } from "./in-memory.repositories";
+import { GetEventUseCase } from "../../../../src/modules/events/application/queries/get-event.use-case";
+import { InMemoryEventRepository, InMemoryEventReadRepository } from "./in-memory.repositories";
 import { InMemoryVenueRepository } from "../domain/in-memory.venue.repo";
 import { Event } from "../../../../src/modules/events/domain/entities/event.entity";
 import { EventPeriod } from "../../../../src/modules/events/domain/value-objects/event-period.vo";
@@ -49,8 +49,9 @@ describe("Update/Delete/Get use cases", () => {
     expect(after).toBeNull();
   });
 
-  it("get returns event or throws", async () => {
+  it("get returns read model or throws", async () => {
     const eventRepo = new InMemoryEventRepository();
+    const readRepo = new InMemoryEventReadRepository(eventRepo);
     const e = new Event({
       id: null,
       ownerId: "u1",
@@ -63,8 +64,9 @@ describe("Update/Delete/Get use cases", () => {
       createdAt: new Date(),
     });
     const saved = await eventRepo.save(e);
-    const getUc = new GetEventUseCase(eventRepo);
+    const getUc = new GetEventUseCase(readRepo);
     const got = await getUc.execute(saved.id as number);
     expect(got.id).toBe(saved.id);
+    expect(got.name).toBe("Nam");
   });
 });

@@ -1,16 +1,19 @@
 import Fastify, { FastifyInstance } from "fastify";
 import { registerEventRoutes } from "../../../../src/modules/events/presentation/controllers/event.controller";
 import { registerExceptionHandlers } from "../../../../src/shared/presentation/exception.handler";
-import { InMemoryEventRepository } from "../application/in-memory.repositories";
+import {
+  InMemoryEventRepository,
+  InMemoryEventReadRepository,
+  FakeTicketCreator,
+} from "../application/in-memory.repositories";
 import { InMemoryVenueRepository } from "../domain/in-memory.venue.repo";
 import { EventFactory } from "../../../../src/modules/events/domain/factories/event.factory";
 import { CreateEventUseCase } from "../../../../src/modules/events/application/commands/create-event.use-case";
 import { GetEventsUseCase } from "../../../../src/modules/events/application/queries/get-events.use-case";
-import { GetEventUseCase } from "../../../../src/modules/events/application/queries/get-event.use.case";
+import { GetEventUseCase } from "../../../../src/modules/events/application/queries/get-event.use-case";
 import { UpdateEventUseCase } from "../../../../src/modules/events/application/commands/update-event.use-case";
 import { CancelEventUseCase } from "../../../../src/modules/events/application/commands/cancel-event.use-case";
 import { DeleteEventUseCase } from "../../../../src/modules/events/application/commands/delete-event.use-case";
-import { FakeTicketCreator } from "../application/in-memory.repositories";
 
 export const fakeJwtGuard = async (req: any, reply: any) => {
   req.user = { id: "00000000-0000-0000-0000-000000000001", email: "a@a", role: "admin" };
@@ -26,6 +29,7 @@ export interface TestApp {
 
 export async function buildTestApp(): Promise<TestApp> {
   const eventRepo = new InMemoryEventRepository();
+  const eventReadRepo = new InMemoryEventReadRepository(eventRepo);
   const venueRepo = new InMemoryVenueRepository([
     { id: "00000000-0000-0000-0000-000000000001", capacity: 100 },
   ]);
@@ -33,8 +37,10 @@ export async function buildTestApp(): Promise<TestApp> {
   const eventFactory = new EventFactory(venueRepo);
 
   const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepo, ticketCreator);
-  const getEventsUseCase = new GetEventsUseCase(eventRepo);
-  const getEventUseCase = new GetEventUseCase(eventRepo);
+
+  const getEventsUseCase = new GetEventsUseCase(eventReadRepo);
+  const getEventUseCase = new GetEventUseCase(eventReadRepo);
+
   const updateEventUseCase = new UpdateEventUseCase(eventRepo, venueRepo);
   const cancelEventUseCase = new CancelEventUseCase(eventRepo);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepo);
