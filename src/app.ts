@@ -51,6 +51,7 @@ import { EventCronJobs } from "./modules/events/presentation/cron/event.cron";
 import { TicketOrmEntity } from "./modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
 import { RegistrationModuleAdapter as TicketRegistrationModuleAdapter } from "./modules/tickets/infrastructure/adapters/registartion-module.adapter";
 import { PostgresTicketRepository } from "./modules/tickets/infrastructure/repositories/postgres-ticket.repository";
+import { PostgresTicketReadRepository } from "./modules/tickets/infrastructure/repositories/postgres-ticket-read.repository";
 import { VenueModuleAdapter as TicketVenueModuleAdapter } from "./modules/tickets/infrastructure/adapters/venue-module.adapter";
 import { EventLookupAdapter } from "./modules/tickets/infrastructure/adapters/event-lookup.adapter";
 import { TicketFactory } from "./modules/tickets/domain/factories/ticket.factory";
@@ -160,12 +161,19 @@ async function bootstrap() {
 
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
+  const ticketReadRepository = new PostgresTicketReadRepository(
+    dataSource.getRepository(TicketOrmEntity),
+  );
+
   const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdUseCase);
   const eventLookupAdapter = new EventLookupAdapter(getEventUseCase);
 
   const ticketFactory = new TicketFactory(ticketRepository, ticketVenueAdapter);
 
-  const getEventTicketsUseCase = new GetEventTicketsUseCase(ticketRepository, eventLookupAdapter);
+  const getEventTicketsUseCase = new GetEventTicketsUseCase(
+    ticketReadRepository,
+    eventReadRepository,
+  );
   const createTicketUseCase = new CreateTicketUseCase(
     ticketFactory,
     ticketRepository,
