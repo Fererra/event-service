@@ -5,7 +5,7 @@ const config: Config = {
   testEnvironment: "node",
   rootDir: "..",
   testMatch: ["<rootDir>/test/modules/**/*.test.ts"],
-  testPathIgnorePatterns: ["/test\/modules\/.*\/integration\//"],
+  testPathIgnorePatterns: ["/test/modules/.*/integration/"],
   transform: {
     "^.+\\.tsx?$": [
       "ts-jest",
