@@ -16,9 +16,18 @@ describe("CreateTicketUseCase (application unit)", () => {
     ]);
     const uc = new CreateTicketUseCase(factory, ticketRepo, eventLookup);
 
-    const saved = await uc.execute({ eventId: 1, type: TicketType.REGULAR, limit: 10, price: 5 });
-    expect(saved.id).toBeDefined();
-    expect(saved.eventId).toBe(1);
+    const ticketId = await uc.execute({
+      eventId: 1,
+      type: TicketType.REGULAR,
+      limit: 10,
+      price: 5,
+    });
+
+    expect(typeof ticketId).toBe("number");
+    expect(ticketId).toBeDefined();
+
+    const saved = await ticketRepo.findById(ticketId);
+    expect(saved?.eventId).toBe(1);
   });
 
   it("throws when event not found", async () => {

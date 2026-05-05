@@ -3,7 +3,9 @@ import { registerTicketRoutes } from "../../../../src/modules/tickets/presentati
 import { registerExceptionHandlers } from "../../../../src/shared/presentation/exception.handler";
 import {
   InMemoryTicketRepository,
+  InMemoryTicketReadRepository,
   FakeEventLookupRepository,
+  FakeEventReadRepository,
   FakeRegistrationCountRepository,
 } from "../application/in-memory.repositories";
 import { InMemoryVenueRepository } from "../domain/in-memory.venue.repo";
@@ -22,22 +24,27 @@ export interface TestApp {
   app: FastifyInstance;
   ticketRepo: InMemoryTicketRepository;
   eventLookup: FakeEventLookupRepository;
+  eventReadRepo: FakeEventReadRepository;
   registrationRepo: FakeRegistrationCountRepository;
   venueRepo: InMemoryVenueRepository;
 }
 
 export async function buildTestApp(): Promise<TestApp> {
   const TEST_VENUE_ID = "00000000-0000-0000-0000-000000000001";
+
   const ticketRepo = new InMemoryTicketRepository();
+  const ticketReadRepo = new InMemoryTicketReadRepository(ticketRepo);
+
   const eventLookup = new FakeEventLookupRepository([
     { id: 1, venueId: TEST_VENUE_ID, isCancelledOrFinished: false },
   ]);
+
+  const eventReadRepo = new FakeEventReadRepository([1]);
   const registrationRepo = new FakeRegistrationCountRepository();
   const venueRepo = new InMemoryVenueRepository([{ id: TEST_VENUE_ID, capacity: 100 }]);
   const ticketFactory = new TicketFactory(ticketRepo as any, venueRepo as any);
 
   const createTicketUseCase = new CreateTicketUseCase(ticketFactory, ticketRepo, eventLookup);
-  const getEventTicketsUseCase = new GetEventTicketsUseCase(ticketRepo, eventLookup);
   const updateTicketUseCase = new UpdateTicketUseCase(
     ticketRepo,
     eventLookup,
@@ -45,6 +52,7 @@ export async function buildTestApp(): Promise<TestApp> {
     registrationRepo,
   );
   const deleteTicketUseCase = new DeleteTicketUseCase(ticketRepo, eventLookup, registrationRepo);
+  const getEventTicketsUseCase = new GetEventTicketsUseCase(ticketReadRepo, eventReadRepo);
 
   const app = Fastify({ logger: false });
   registerExceptionHandlers(app);
@@ -61,5 +69,5 @@ export async function buildTestApp(): Promise<TestApp> {
   );
 
   await app.ready();
-  return { app, ticketRepo, eventLookup, registrationRepo, venueRepo };
+  return { app, ticketRepo, eventLookup, eventReadRepo, registrationRepo, venueRepo };
 }
