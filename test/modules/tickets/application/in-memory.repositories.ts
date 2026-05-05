@@ -6,6 +6,11 @@ import {
   EventLookupData,
 } from "../../../../src/modules/tickets/domain/repositories/event-lookup.repository.interface";
 import { IRegistrationCountRepository } from "../../../../src/modules/tickets/domain/repositories/registration-count.repository.interface";
+import { ITicketReadRepository } from "../../../../src/modules/tickets/application/queries/ticket-read.repository.interface";
+import { TicketReadModel } from "../../../../src/modules/tickets/application/queries/ticket.read-model";
+import { IEventReadRepository } from "../../../../src/modules/events/application/queries/event-read.repository.interface";
+import { EventReadModel } from "../../../../src/modules/events/application/queries/event.read-model";
+import { EventStatus } from "../../../../src/modules/events/domain/value-objects/event-status.enum";
 
 export class InMemoryTicketRepository implements ITicketRepository {
   private items: Ticket[] = [];
@@ -27,7 +32,7 @@ export class InMemoryTicketRepository implements ITicketRepository {
   }
 
   async findByEventId(eventId: number): Promise<Ticket[]> {
-    return this.items.filter((t) => t.eventId === eventId).map((t) => t);
+    return this.items.filter((t) => t.eventId === eventId);
   }
 
   async findById(id: number): Promise<Ticket | null> {
@@ -59,7 +64,6 @@ export class InMemoryTicketRepository implements ITicketRepository {
     this.items = this.items.filter((t) => t.id !== id);
   }
 
-  // helpers for tests
   static createTicketForTest(
     eventId: number,
     type: TicketType,
@@ -73,6 +77,53 @@ export class InMemoryTicketRepository implements ITicketRepository {
       configurable: true,
     });
     return t;
+  }
+}
+
+export class InMemoryTicketReadRepository implements ITicketReadRepository {
+  constructor(private readonly writeRepo: InMemoryTicketRepository) {}
+
+  async findByEventId(eventId: number): Promise<TicketReadModel[]> {
+    const tickets = await this.writeRepo.findByEventId(eventId);
+    return tickets.map((t) => ({
+      id: t.persistedId,
+      event_id: t.eventId,
+      type: t.type,
+      limit: t.limit,
+      price: t.price,
+    }));
+  }
+}
+
+export class FakeEventReadRepository implements IEventReadRepository {
+  private ids: number[];
+
+  constructor(initial: number[] = []) {
+    this.ids = [...initial];
+  }
+
+  async findAll(): Promise<EventReadModel[]> {
+    return [];
+  }
+
+  async findById(id: number): Promise<EventReadModel | null> {
+    if (!this.ids.includes(id)) return null;
+    return {
+      id,
+      owner_id: "test-owner",
+      name: "Test Event",
+      organisator: "Test Org",
+      description: "",
+      start_timestamp: new Date().toISOString(),
+      end_timestamp: new Date().toISOString(),
+      status: EventStatus.ACTIVE,
+      venue_id: "00000000-0000-0000-0000-000000000001",
+      created_at: new Date().toISOString(),
+    };
+  }
+
+  add(id: number): void {
+    this.ids.push(id);
   }
 }
 
