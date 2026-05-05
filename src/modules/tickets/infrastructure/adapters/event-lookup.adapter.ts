@@ -2,7 +2,7 @@ import {
   EventLookupData,
   IEventLookupRepository,
 } from "../../domain/repositories/event-lookup.repository.interface";
-import { GetEventUseCase } from "../../../events/application/queries/get-event.use.case";
+import { GetEventUseCase } from "../../../events/application/queries/get-event.use-case";
 import { DomainError, NotFoundError } from "../../../../shared/domain/errors/domain.error";
 
 export class EventLookupAdapter implements IEventLookupRepository {

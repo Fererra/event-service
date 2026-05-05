@@ -38,7 +38,7 @@ import { PostgresEventRepository } from "./modules/events/infrastructure/reposit
 import { VenueModuleAdapter as EventVenueModuleAdapter } from "./modules/events/infrastructure/adapters/venue-module.adapter";
 import { TicketCreatorAdapter } from "./modules/events/infrastructure/adapters/ticket-creator.adapter";
 import { EventFactory } from "./modules/events/domain/factories/event.factory";
-import { GetEventUseCase } from "./modules/events/application/queries/get-event.use.case";
+import { GetEventUseCase } from "./modules/events/application/queries/get-event.use-case";
 import { GetEventsUseCase } from "./modules/events/application/queries/get-events.use-case";
 import { UpdateEventUseCase } from "./modules/events/application/commands/update-event.use-case";
 import { CancelEventUseCase } from "./modules/events/application/commands/cancel-event.use-case";
