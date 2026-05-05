@@ -1,6 +1,6 @@
 import { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { GetEventsUseCase } from "../../application/queries/get-events.use-case";
-import { GetEventUseCase } from "../../application/queries/get-event.use.case";
+import { GetEventUseCase } from "../../application/queries/get-event.use-case";
 import { CreateEventUseCase } from "../../application/commands/create-event.use-case";
 import { UpdateEventUseCase } from "../../application/commands/update-event.use-case";
 import { CancelEventUseCase } from "../../application/commands/cancel-event.use-case";
