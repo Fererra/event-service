@@ -4,14 +4,14 @@ import { InMemoryEventRepository, FakeTicketCreator } from "./in-memory.reposito
 import { InMemoryVenueRepository } from "../domain/in-memory.venue.repo";
 
 describe("CreateEventUseCase (application unit)", () => {
-  it("creates event and delegates ticket creation", async () => {
+  it("creates event and delegates ticket creation, returns id", async () => {
     const venueRepo = new InMemoryVenueRepository([{ id: "v1", capacity: 100 }]);
     const factory = new EventFactory(venueRepo);
     const eventRepo = new InMemoryEventRepository();
     const ticketCreator = new FakeTicketCreator();
     const uc = new CreateEventUseCase(factory, eventRepo, ticketCreator);
 
-    const saved = await uc.execute({
+    const eventId = await uc.execute({
       ownerId: "u1",
       name: "Elise",
       organisator: "Org",
@@ -22,8 +22,9 @@ describe("CreateEventUseCase (application unit)", () => {
       tickets: [{ type: "regular", limit: 10, price: 5 }],
     });
 
-    expect(saved.id).toBeDefined();
+    expect(typeof eventId).toBe("number");
+    expect(eventId).toBeDefined();
     expect(ticketCreator.created.length).toBe(1);
-    expect(ticketCreator.created[0].eventId).toBe(saved.id);
+    expect(ticketCreator.created[0].eventId).toBe(eventId);
   });
 });

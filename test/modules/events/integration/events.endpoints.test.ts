@@ -46,25 +46,8 @@ describe("Events Endpoints (Integration, in-memory)", () => {
     await testApp.dataSource.destroy();
   });
 
-  async function createVenue(): Promise<string> {
-    const res = await testApp.app.inject({
-      method: "POST",
-      url: "/venues",
-      headers: { authorization: `Bearer ${adminAccessToken}` },
-      payload: {
-        name: "Main Hall",
-        capacity: 500,
-        address: "123 Main St",
-      },
-    });
-
-    return (res.json() as { id: string }).id;
-  }
-
-  it("POST /events -> 201 and returns created event", async () => {
-    const venueId = await createVenue();
-
-    const res = await testApp.app.inject({
+  it("POST /events -> 201 and returns id", async () => {
+    const res = await app.inject({
       method: "POST",
       url: "/events",
       headers: { authorization: `Bearer ${adminAccessToken}` },
@@ -81,14 +64,12 @@ describe("Events Endpoints (Integration, in-memory)", () => {
 
     expect(res.statusCode).toBe(201);
     const body = res.json();
-    expect(body.event).toBeDefined();
-    expect(body.event.id).toBeDefined();
+    expect(body.id).toBeDefined();
+    expect(typeof body.id).toBe("number");
   });
 
-  it("GET /events returns list", async () => {
-    const venueId = await createVenue();
-
-    await testApp.app.inject({
+  it("GET /events returns list with read model fields", async () => {
+    await app.inject({
       method: "POST",
       url: "/events",
       headers: { authorization: `Bearer ${adminAccessToken}` },
@@ -107,6 +88,8 @@ describe("Events Endpoints (Integration, in-memory)", () => {
     const arr = res.json();
     expect(Array.isArray(arr)).toBe(true);
     expect(arr.length).toBeGreaterThanOrEqual(1);
+    expect(arr[0].owner_id).toBeDefined();
+    expect(arr[0].start_timestamp).toBeDefined();
   });
 
   it("PATCH /events/:id/cancel -> 204", async () => {
@@ -125,12 +108,8 @@ describe("Events Endpoints (Integration, in-memory)", () => {
         venue_id: venueId,
       },
     });
-    const id = create.json().event.id;
-    const res = await testApp.app.inject({
-      method: "PATCH",
-      url: `/events/${id}/cancel`,
-      headers: { authorization: `Bearer ${adminAccessToken}` },
-    });
+    const id = create.json().id;
+    const res = await app.inject({ method: "PATCH", url: `/events/${id}/cancel` });
     expect(res.statusCode).toBe(204);
   });
 
@@ -150,8 +129,8 @@ describe("Events Endpoints (Integration, in-memory)", () => {
         venue_id: venueId,
       },
     });
-    const id = create.json().event.id;
-    const res = await testApp.app.inject({
+    const id = create.json().id;
+    const res = await app.inject({
       method: "PATCH",
       url: `/events/${id}`,
       headers: { authorization: `Bearer ${adminAccessToken}` },
@@ -176,7 +155,7 @@ describe("Events Endpoints (Integration, in-memory)", () => {
         venue_id: venueId,
       },
     });
-    const id = create.json().event.id;
+    const id = create.json().id;
 
     await testApp.app.inject({
       method: "PATCH",
