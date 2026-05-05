@@ -1,6 +1,6 @@
-import { EventStatus } from "../../domain/value-objects/event-status.enum";
+import { TicketType } from "../../../tickets/domain/value-objects/ticket-type.enum";
 
-const ticketTypeValues = ["regular", "vip", "early_bird"] as const;
+const ticketTypeValues = [TicketType.REGULAR, TicketType.VIP, TicketType.EARLY_BIRD] as const;
 type TicketTypeValue = (typeof ticketTypeValues)[number];
 
 export interface CreateTicketInlineDto {
@@ -26,19 +26,6 @@ export interface UpdateEventDto {
   start_timestamp?: string;
   end_timestamp?: string;
   venue_id?: string;
-}
-
-export interface EventResponseDto {
-  id: number;
-  owner_id: string;
-  name: string;
-  organisator: string;
-  description: string;
-  start_timestamp: string;
-  end_timestamp: string;
-  status: EventStatus;
-  venue_id: string;
-  created_at: string;
 }
 
 const ticketInlineSchema = {
