@@ -1,125 +1,115 @@
-import { FastifyInstance, preHandlerHookHandler } from "fastify";
-import {
-  CreateVenueUseCase,
-  CreateVenueCommand,
-} from "../../application/use-cases/create-venue.use-case";
-import { GetAllVenuesUseCase } from "../../application/use-cases/get-venues.use-case";
-import { GetVenueByIdUseCase } from "../../application/use-cases/get-venue-by-id.use-case";
-import { DeleteVenueUseCase } from "../../application/use-cases/delete-venue.use-case";
-import {
-  UpdateVenueUseCase,
-  UpdateVenueCommand,
-} from "../../application/use-cases/update-venue.use-case";
-import {
-  CreateVenueSchema,
-  CreateVenueDto,
-  GetVenueByIdSchema,
-  GetVenueByIdDto,
-  UpdateVenueSchema,
-  UpdateVenueDto,
-  DeleteVenueSchema,
-  DeleteVenueDto,
-} from "../dto/venue.dto";
+import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import { CreateVenueCommandHandler } from "../../application/commands/create-venue/create-venue.handler";
+import { CreateVenueCommand } from "../../application/commands/create-venue/create-venue.command";
+import { UpdateVenueCommandHandler } from "../../application/commands/update-venue/update-venue.handler";
+import { UpdateVenueCommand } from "../../application/commands/update-venue/update-venue.command";
+import { DeleteVenueCommandHandler } from "../../application/commands/delete-venue/delete-venue.handler";
+import { DeleteVenueCommand } from "../../application/commands/delete-venue/delete-venue.command";
+import { GetAllVenuesQueryHandler } from "../../application/queries/get-all-venues/get-all-venues.handler";
+import { GetAllVenuesQuery } from "../../application/queries/get-all-venues/get-all-venues.query";
+import { GetVenueByIdQueryHandler } from "../../application/queries/get-venue-by-id/get-venue-by-id.handler";
+import { GetVenueByIdQuery } from "../../application/queries/get-venue-by-id/get-venue-by-id.query";
 
-export interface VenueUseCases {
-  createVenueUseCase: CreateVenueUseCase;
-  getAllVenuesUseCase: GetAllVenuesUseCase;
-  getVenueByIdUseCase: GetVenueByIdUseCase;
-  updateVenueUseCase: UpdateVenueUseCase;
-  deleteVenueUseCase: DeleteVenueUseCase;
+import { CreateVenueRequestDto, CreateVenueSchema } from "../dto/create-venue.request.dto";
+import { UpdateVenueRequestDto, UpdateVenueSchema } from "../dto/update-venue.request.dto";
+import { VenueResponseSchema } from "../dto/venue.response.dto";
+
+export interface VenueHandlers {
+  createVenueHandler: CreateVenueCommandHandler;
+  updateVenueHandler: UpdateVenueCommandHandler;
+  deleteVenueHandler: DeleteVenueCommandHandler;
+  getAllVenuesHandler: GetAllVenuesQueryHandler;
+  getVenueByIdHandler: GetVenueByIdQueryHandler;
 }
 
-export interface VenueRouteGuards {
-  jwtGuard: preHandlerHookHandler;
-  adminGuard: preHandlerHookHandler;
+export interface Guards {
+  jwtGuard: any;
+  adminGuard: any;
 }
 
-export function venueRoutes(
-  app: FastifyInstance,
-  useCases: VenueUseCases,
-  guards: VenueRouteGuards,
-) {
-  const {
-    createVenueUseCase,
-    getAllVenuesUseCase,
-    getVenueByIdUseCase,
-    updateVenueUseCase,
-    deleteVenueUseCase,
-  } = useCases;
-  const adminGuard = guards.adminGuard;
-  const jwtGuard = guards.jwtGuard;
+export function venueRoutes(app: FastifyInstance, handlers: VenueHandlers, guards: Guards): void {
+  app.get(
+    "/venues",
+    {
+      preHandler: [guards.jwtGuard, guards.adminGuard],
+      schema: {
+        response: { 200: { type: "array", items: VenueResponseSchema } },
+      },
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const query = new GetAllVenuesQuery();
+      const venues = await handlers.getAllVenuesHandler.handle(query);
+      reply.send(venues);
+    },
+  );
 
-  app.post<{ Body: CreateVenueDto }>(
+  app.get<{ Params: { id: string } }>(
+    "/venues/:id",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["id"],
+          properties: { id: { type: "string", format: "uuid" } },
+        },
+        response: { 200: VenueResponseSchema },
+      },
+      preHandler: [guards.jwtGuard, guards.adminGuard],
+    },
+    async (request, reply) => {
+      const query = new GetVenueByIdQuery(request.params.id);
+      const venue = await handlers.getVenueByIdHandler.handle(query);
+
+      reply.send(venue);
+    },
+  );
+
+  app.post<CreateVenueRequestDto>(
     "/venues",
     {
       schema: CreateVenueSchema,
-      preHandler: [jwtGuard, adminGuard],
+      preHandler: [guards.jwtGuard, guards.adminGuard],
     },
     async (request, reply) => {
-      const command: CreateVenueCommand = {
-        name: request.body.name,
-        capacity: request.body.capacity ?? null,
-        address: request.body.address,
-      };
+      const command = new CreateVenueCommand(
+        request.body.name,
+        request.body.capacity ?? null,
+        request.body.address,
+      );
 
-      const venueId = await createVenueUseCase.execute(command);
-      return reply.code(201).send({ id: venueId });
+      const venueId = await handlers.createVenueHandler.handle(command);
+      reply.code(201).send({ id: venueId });
     },
   );
 
-  app.get(
-    "/venues",
-    { preHandler: [jwtGuard, adminGuard] },
-    async (request, reply) => {
-      const venues = await getAllVenuesUseCase.execute();
-      return reply.code(200).send(venues);
-    },
-  );
-
-  app.get<{ Params: GetVenueByIdDto["Params"] }>(
-    "/venues/:venueId",
-    {
-      schema: GetVenueByIdSchema,
-      preHandler: [jwtGuard, adminGuard],
-    },
-    async (request, reply) => {
-      const venue = await getVenueByIdUseCase.execute(request.params.venueId);
-      return reply.code(200).send(venue);
-    },
-  );
-
-  app.patch<{
-    Params: UpdateVenueDto["Params"];
-    Body: UpdateVenueDto["Body"];
-  }>(
-    "/venues/:venueId",
+  app.patch<UpdateVenueRequestDto>(
+    "/venues/:id",
     {
       schema: UpdateVenueSchema,
-      preHandler: [jwtGuard, adminGuard],
+      preHandler: [guards.jwtGuard, guards.adminGuard],
     },
     async (request, reply) => {
-      const command: UpdateVenueCommand = {
-        id: request.params.venueId,
-        name: request.body.name,
-        capacity: request.body.capacity,
-        address: request.body.address,
-      };
+      const command = new UpdateVenueCommand(
+        request.params.id,
+        request.body.name,
+        request.body.capacity ?? null,
+        request.body.address,
+      );
 
-      await updateVenueUseCase.execute(command);
-
-      return reply.code(204).send();
+      await handlers.updateVenueHandler.handle(command);
+      reply.code(204).send();
     },
   );
 
-  app.delete<{ Params: DeleteVenueDto["Params"] }>(
-    "/venues/:venueId",
+  app.delete<{ Params: { id: string } }>(
+    "/venues/:id",
     {
-      schema: DeleteVenueSchema,
-      preHandler: [jwtGuard, adminGuard],
+      preHandler: [guards.jwtGuard, guards.adminGuard],
     },
     async (request, reply) => {
-      await deleteVenueUseCase.execute(request.params.venueId);
-      return reply.code(204).send();
+      const command = new DeleteVenueCommand(request.params.id);
+      await handlers.deleteVenueHandler.handle(command);
+      reply.code(204).send();
     },
   );
 }
