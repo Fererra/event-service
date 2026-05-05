@@ -20,13 +20,15 @@ import { RefreshTokenOrmEntity } from "./modules/auth/infrastructure/orm/entitie
 
 // Venues imports
 import { venueRoutes } from "./modules/venue/presentation/controllers/venue.controller";
-import { CreateVenueUseCase } from "./modules/venue/application/use-cases/create-venue.use-case";
-import { GetAllVenuesUseCase } from "./modules/venue/application/use-cases/get-venues.use-case";
-import { GetVenueByIdUseCase } from "./modules/venue/application/use-cases/get-venue-by-id.use-case";
-import { UpdateVenueUseCase } from "./modules/venue/application/use-cases/update-venue.use-case";
-import { DeleteVenueUseCase } from "./modules/venue/application/use-cases/delete-venue.use-case";
+
+import { CreateVenueCommandHandler } from "./modules/venue/application/commands/create-venue/create-venue.handler";
+import { UpdateVenueCommandHandler } from "./modules/venue/application/commands/update-venue/update-venue.handler";
+import { DeleteVenueCommandHandler } from "./modules/venue/application/commands/delete-venue/delete-venue.handler";
+import { GetAllVenuesQueryHandler } from "./modules/venue/application/queries/get-all-venues/get-all-venues.handler";
+import { GetVenueByIdQueryHandler } from "./modules/venue/application/queries/get-venue-by-id/get-venue-by-id.handler";
 import { VenueFactory } from "./modules/venue/domain/factories/venue.factory";
 import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
+import { PostgresVenueReadRepository } from "./modules/venue/infrastructure/repositories/postgres-venue-read.repository";
 import { TypeOrmVenueEventChecker } from "./modules/venue/infrastructure/repositories/venue-event-checker";
 import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
 
@@ -129,25 +131,26 @@ async function bootstrap() {
   );
 
   // Venues
-  const venueRepository = new PostgresVenueRepository(dataSource.getRepository(VenueOrmEntity));
-  const venueFactory = new VenueFactory(venueRepository);
-  const createVenueUseCase = new CreateVenueUseCase(venueRepository, venueFactory);
-  const getAllVenuesUseCase = new GetAllVenuesUseCase(venueRepository);
-  const getVenueByIdUseCase = new GetVenueByIdUseCase(venueRepository);
-  const updateVenueUseCase = new UpdateVenueUseCase(venueRepository, venueFactory);
+  const venueOrmRepo = dataSource.getRepository(VenueOrmEntity);
+
+  const venueWriteRepository = new PostgresVenueRepository(venueOrmRepo);
+  const venueReadRepository = new PostgresVenueReadRepository(venueOrmRepo);
+
+  const venueFactory = new VenueFactory(venueWriteRepository);
+
+  const createVenueHandler = new CreateVenueCommandHandler(venueWriteRepository, venueFactory);
+  const updateVenueHandler = new UpdateVenueCommandHandler(venueWriteRepository, venueFactory);
 
   const eventOrmRepo = dataSource.getRepository(EventOrmEntity);
   const realEventChecker = new TypeOrmVenueEventChecker(eventOrmRepo);
+  const deleteVenueHandler = new DeleteVenueCommandHandler(venueWriteRepository, realEventChecker);
 
-  const deleteVenueUseCase = new DeleteVenueUseCase(venueRepository, realEventChecker);
+  const getAllVenuesHandler = new GetAllVenuesQueryHandler(venueReadRepository);
+  const getVenueByIdHandler = new GetVenueByIdQueryHandler(venueReadRepository);
 
   // Events
   const eventRepository = new PostgresEventRepository(dataSource.getRepository(EventOrmEntity));
-  const eventReadRepository = new PostgresEventReadRepository(
-    dataSource.getRepository(EventOrmEntity),
-  );
-
-  const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdUseCase);
+  const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdHandler);
 
   const eventFactory = new EventFactory(eventVenueAdapter);
 
@@ -159,13 +162,9 @@ async function bootstrap() {
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
   const syncEventStatusesUseCase = new SyncEventStatusesUseCase(eventRepository);
 
-  // Tickets
+  // Tickets;
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
-  const ticketReadRepository = new PostgresTicketReadRepository(
-    dataSource.getRepository(TicketOrmEntity),
-  );
-
-  const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdUseCase);
+  const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdHandler);
   const eventLookupAdapter = new EventLookupAdapter(getEventUseCase);
 
   const ticketFactory = new TicketFactory(ticketRepository, ticketVenueAdapter);
@@ -239,11 +238,11 @@ async function bootstrap() {
   venueRoutes(
     app,
     {
-      createVenueUseCase,
-      getAllVenuesUseCase,
-      getVenueByIdUseCase,
-      updateVenueUseCase,
-      deleteVenueUseCase,
+      createVenueHandler,
+      getAllVenuesHandler,
+      getVenueByIdHandler,
+      updateVenueHandler,
+      deleteVenueHandler,
     },
     guards,
   );
