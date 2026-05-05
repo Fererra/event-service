@@ -11,14 +11,6 @@ export interface UpdateTicketDto {
   price?: number;
 }
 
-export interface TicketResponseDto {
-  id: number;
-  event_id: number;
-  type: TicketType;
-  limit: number;
-  price: number;
-}
-
 export const createTicketSchema = {
   body: {
     type: "object",

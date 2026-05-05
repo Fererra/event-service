@@ -6,21 +6,9 @@ import { DeleteTicketUseCase } from "../../application/commands/delete-ticket.us
 import {
   CreateTicketDto,
   UpdateTicketDto,
-  TicketResponseDto,
   createTicketSchema,
   updateTicketSchema,
 } from "../dtos/ticket.dto";
-import { Ticket } from "../../domain/entities/ticket.entity";
-
-function toTicketResponse(ticket: Ticket): TicketResponseDto {
-  return {
-    id: ticket.persistedId,
-    event_id: ticket.eventId,
-    type: ticket.type,
-    limit: ticket.limit,
-    price: ticket.price,
-  };
-}
 
 export interface TicketUseCases {
   getEventTicketsUseCase: GetEventTicketsUseCase;
@@ -45,7 +33,7 @@ export function registerTicketRoutes(
 
   app.get<{ Params: { eventId: string } }>("/events/:eventId/tickets", async (req, reply) => {
     const tickets = await getEventTicketsUseCase.execute(Number(req.params.eventId));
-    reply.send(tickets.map(toTicketResponse));
+    reply.send(tickets);
   });
 
   app.post<{ Params: { eventId: string }; Body: CreateTicketDto }>(
@@ -55,13 +43,13 @@ export function registerTicketRoutes(
       schema: createTicketSchema,
     },
     async (req, reply) => {
-      const ticket = await createTicketUseCase.execute({
+      const ticketId = await createTicketUseCase.execute({
         eventId: Number(req.params.eventId),
         type: req.body.type,
         limit: req.body.limit,
         price: req.body.price,
       });
-      reply.status(201).send({ ticket: toTicketResponse(ticket) });
+      reply.status(201).send({ id: ticketId });
     },
   );
 
