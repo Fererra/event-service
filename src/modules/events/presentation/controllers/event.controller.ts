@@ -1,38 +1,17 @@
 import { FastifyInstance, preHandlerHookHandler } from "fastify";
 import { GetEventsUseCase } from "../../application/queries/get-events.use-case";
-import { GetEventUseCase } from "../../application/queries/get-event.use.case";
+import { GetEventUseCase } from "../../application/queries/get-event.use-case";
 import { CreateEventUseCase } from "../../application/commands/create-event.use-case";
 import { UpdateEventUseCase } from "../../application/commands/update-event.use-case";
 import { CancelEventUseCase } from "../../application/commands/cancel-event.use-case";
 import { DeleteEventUseCase } from "../../application/commands/delete-event.use-case";
-import { Event } from "../../domain/entities/event.entity";
-import { DomainError } from "../../../../shared/domain/errors/domain.error";
 import {
   CreateEventDto,
   UpdateEventDto,
-  EventResponseDto,
   createEventSchema,
   updateEventSchema,
 } from "../dtos/event.dto";
 import { AuthenticatedRequest } from "../../../../shared/presentation/authenicated-request.type";
-
-function toEventResponse(event: Event): EventResponseDto {
-  if (event.id === null) {
-    throw new DomainError("Event id is missing");
-  }
-  return {
-    id: event.id,
-    owner_id: event.ownerId,
-    name: event.name,
-    organisator: event.organisator,
-    description: event.description,
-    start_timestamp: event.startTimestamp.toISOString(),
-    end_timestamp: event.endTimestamp.toISOString(),
-    status: event.status,
-    venue_id: event.venueId,
-    created_at: event.createdAt.toISOString(),
-  };
-}
 
 export interface EventUseCases {
   getEventsUseCase: GetEventsUseCase;
@@ -65,12 +44,12 @@ export function registerEventRoutes(
 
   app.get("/events", async (req, reply) => {
     const events = await getEventsUseCase.execute();
-    reply.send(events.map(toEventResponse));
+    reply.send(events);
   });
 
   app.get<{ Params: { eventId: string } }>("/events/:eventId", async (req, reply) => {
     const event = await getEventUseCase.execute(Number(req.params.eventId));
-    reply.send(toEventResponse(event));
+    reply.send(event);
   });
 
   app.post<{ Body: CreateEventDto }>(
@@ -78,7 +57,7 @@ export function registerEventRoutes(
     { preHandler: adminOnly, schema: createEventSchema },
     async (req, reply) => {
       const user = (req as AuthenticatedRequest).user;
-      const event = await createEventUseCase.execute({
+      const eventId = await createEventUseCase.execute({
         ownerId: user.id,
         name: req.body.name,
         organisator: req.body.organisator,
@@ -88,7 +67,7 @@ export function registerEventRoutes(
         venueId: req.body.venue_id,
         tickets: req.body.tickets,
       });
-      reply.status(201).send({ event: toEventResponse(event) });
+      reply.status(201).send({ id: eventId });
     },
   );
 

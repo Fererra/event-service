@@ -35,10 +35,11 @@ import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venu
 // Events imports
 import { EventOrmEntity } from "./modules/events/infrastructure/orm/entities/event.orm-entity";
 import { PostgresEventRepository } from "./modules/events/infrastructure/repositories/postgres-event.repository";
+import { PostgresEventReadRepository } from "./modules/events/infrastructure/repositories/postgres-event-read.repository";
 import { VenueModuleAdapter as EventVenueModuleAdapter } from "./modules/events/infrastructure/adapters/venue-module.adapter";
 import { TicketCreatorAdapter } from "./modules/events/infrastructure/adapters/ticket-creator.adapter";
 import { EventFactory } from "./modules/events/domain/factories/event.factory";
-import { GetEventUseCase } from "./modules/events/application/queries/get-event.use.case";
+import { GetEventUseCase } from "./modules/events/application/queries/get-event.use-case";
 import { GetEventsUseCase } from "./modules/events/application/queries/get-events.use-case";
 import { UpdateEventUseCase } from "./modules/events/application/commands/update-event.use-case";
 import { CancelEventUseCase } from "./modules/events/application/commands/cancel-event.use-case";
@@ -52,6 +53,7 @@ import { EventCronJobs } from "./modules/events/presentation/cron/event.cron";
 import { TicketOrmEntity } from "./modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
 import { RegistrationModuleAdapter as TicketRegistrationModuleAdapter } from "./modules/tickets/infrastructure/adapters/registartion-module.adapter";
 import { PostgresTicketRepository } from "./modules/tickets/infrastructure/repositories/postgres-ticket.repository";
+import { PostgresTicketReadRepository } from "./modules/tickets/infrastructure/repositories/postgres-ticket-read.repository";
 import { VenueModuleAdapter as TicketVenueModuleAdapter } from "./modules/tickets/infrastructure/adapters/venue-module.adapter";
 import { EventLookupAdapter } from "./modules/tickets/infrastructure/adapters/event-lookup.adapter";
 import { TicketFactory } from "./modules/tickets/domain/factories/ticket.factory";
@@ -152,8 +154,9 @@ async function bootstrap() {
 
   const eventFactory = new EventFactory(eventVenueAdapter);
 
-  const getEventsUseCase = new GetEventsUseCase(eventRepository);
-  const getEventUseCase = new GetEventUseCase(eventRepository);
+  const getEventsUseCase = new GetEventsUseCase(eventReadRepository);
+  const getEventUseCase = new GetEventUseCase(eventReadRepository);
+
   const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventVenueAdapter);
   const cancelEventUseCase = new CancelEventUseCase(eventRepository);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
@@ -166,7 +169,10 @@ async function bootstrap() {
 
   const ticketFactory = new TicketFactory(ticketRepository, ticketVenueAdapter);
 
-  const getEventTicketsUseCase = new GetEventTicketsUseCase(ticketRepository, eventLookupAdapter);
+  const getEventTicketsUseCase = new GetEventTicketsUseCase(
+    ticketReadRepository,
+    eventReadRepository,
+  );
   const createTicketUseCase = new CreateTicketUseCase(
     ticketFactory,
     ticketRepository,

@@ -3,11 +3,12 @@ import { DeleteTicketUseCase } from "../../../../src/modules/tickets/application
 import { GetEventTicketsUseCase } from "../../../../src/modules/tickets/application/queries/get-event-tickets.use-case";
 import {
   InMemoryTicketRepository,
+  InMemoryTicketReadRepository,
   FakeEventLookupRepository,
+  FakeEventReadRepository,
   FakeRegistrationCountRepository,
 } from "./in-memory.repositories";
 import { InMemoryVenueRepository } from "../domain/in-memory.venue.repo";
-import { Ticket } from "../../../../src/modules/tickets/domain/entities/ticket.entity";
 import { TicketType } from "../../../../src/modules/tickets/domain/value-objects/ticket-type.enum";
 
 describe("Ticket use cases (application unit)", () => {
@@ -21,7 +22,7 @@ describe("Ticket use cases (application unit)", () => {
       { id: 1, venueId: TEST_VENUE_ID, isCancelledOrFinished: false },
     ]);
     const registrationRepo = new FakeRegistrationCountRepository();
-    registrationRepo.setCount(1, ticket.id as number, 2); // 2 sold
+    registrationRepo.setCount(1, ticket.id as number, 2);
     const venueRepo = new InMemoryVenueRepository([{ id: TEST_VENUE_ID, capacity: 100 }]);
     const uc = new UpdateTicketUseCase(ticketRepo, eventLookup, venueRepo, registrationRepo);
 
@@ -51,18 +52,21 @@ describe("Ticket use cases (application unit)", () => {
     expect(after).toBeNull();
   });
 
-  it("get event tickets returns list or throws", async () => {
+  it("get event tickets returns read models or throws", async () => {
     const ticketRepo = new InMemoryTicketRepository();
+    const readRepo = new InMemoryTicketReadRepository(ticketRepo);
     const t1 = InMemoryTicketRepository.createTicketForTest(3, TicketType.REGULAR, 5, 5);
     await ticketRepo.save(t1);
-    const eventLookup = new FakeEventLookupRepository([
-      { id: 3, venueId: TEST_VENUE_ID, isCancelledOrFinished: false },
-    ]);
-    const uc = new GetEventTicketsUseCase(ticketRepo, eventLookup);
+
+    const eventReadRepo = new FakeEventReadRepository([3]);
+    const uc = new GetEventTicketsUseCase(readRepo, eventReadRepo);
 
     const list = await uc.execute(3);
     expect(list.length).toBeGreaterThanOrEqual(1);
+    expect(list[0].event_id).toBe(3);
 
-    await expect(uc.execute(999)).rejects.toThrow();
+    const emptyEventReadRepo = new FakeEventReadRepository([]);
+    const ucMissing = new GetEventTicketsUseCase(readRepo, emptyEventReadRepo);
+    await expect(ucMissing.execute(999)).rejects.toThrow();
   });
 });

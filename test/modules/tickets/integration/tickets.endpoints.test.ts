@@ -15,7 +15,7 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
     await app.close();
   });
 
-  it("POST /events/:eventId/tickets -> 201 and returns created ticket", async () => {
+  it("POST /events/:eventId/tickets -> 201 and returns id", async () => {
     const res = await app.inject({
       method: "POST",
       url: "/events/1/tickets",
@@ -27,16 +27,12 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
     });
 
     expect(res.statusCode).toBe(201);
-    if (res.statusCode !== 201) {
-      console.error("Create ticket failed body:", res.json());
-    }
     const body = res.json();
-    expect(body.ticket).toBeDefined();
-    expect(body.ticket.id).toBeDefined();
-    expect(body.ticket.event_id).toBe(1);
+    expect(body.id).toBeDefined();
+    expect(typeof body.id).toBe("number");
   });
 
-  it("GET /events/:eventId/tickets returns list", async () => {
+  it("GET /events/:eventId/tickets returns list with read model fields", async () => {
     const create = await app.inject({
       method: "POST",
       url: "/events/1/tickets",
@@ -49,6 +45,8 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
     const arr = res.json();
     expect(Array.isArray(arr)).toBe(true);
     expect(arr.length).toBeGreaterThanOrEqual(1);
+    expect(arr[0].event_id).toBe(1);
+    expect(arr[0].type).toBeDefined();
   });
 
   it("PATCH /events/:eventId/tickets/:ticketId -> 204 update", async () => {
@@ -58,7 +56,7 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
       payload: { type: TicketType.VIP, limit: 3, price: 20 },
     });
     expect(create.statusCode).toBe(201);
-    const id = create.json().ticket.id;
+    const id = create.json().id;
 
     const res = await app.inject({
       method: "PATCH",
@@ -80,7 +78,7 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
       payload: { type: TicketType.EARLY_BIRD, limit: 2, price: 1 },
     });
     expect(create.statusCode).toBe(201);
-    const id = create.json().ticket.id;
+    const id = create.json().id;
 
     const res = await app.inject({ method: "DELETE", url: `/events/1/tickets/${id}` });
     expect(res.statusCode).toBe(204);
@@ -97,7 +95,7 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
       payload: { type: TicketType.REGULAR, limit: 10, price: 5 },
     });
     expect(create.statusCode).toBe(201);
-    const id = create.json().ticket.id;
+    const id = create.json().id;
 
     ctx.registrationRepo.setCount(1, id, 2);
 
