@@ -16,20 +16,16 @@ export class InMemoryVenueRepository implements VenueRepository {
     return null;
   }
 
-  async findAll(): Promise<Venue[]> {
-    return Array.from(this.store.values());
-  }
-
   async findById(id: string): Promise<Venue | null> {
     return this.store.get(id) ?? null;
   }
 
-  async delete(id: string): Promise<void> {
-    this.store.delete(id);
+  async findAll(): Promise<Venue[]> {
+    return Array.from(this.store.values());
   }
 
-  getAll(): Venue[] {
-    return Array.from(this.store.values());
+  async delete(id: string): Promise<void> {
+    this.store.delete(id);
   }
 
   clear(): void {
