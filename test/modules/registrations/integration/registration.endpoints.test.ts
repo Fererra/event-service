@@ -115,9 +115,8 @@ describe("Registration Endpoints (Integration)", () => {
 
       const res = await testApp.app.inject({
         method: "POST",
-        url: `/events/${eventId}/registrations`,
-        headers: { authorization: `Bearer ${userAccessToken}` },
-        payload: { ticket_id: ticketId },
+        url: "/events/1/registrations",
+        payload: { ticketId: 10 },
       });
 
       expect(res.statusCode).toBe(201);
@@ -125,8 +124,8 @@ describe("Registration Endpoints (Integration)", () => {
       expect(body).toHaveProperty("registration");
     });
 
-    it("returns 400 when ticket_id is missing", async () => {
-      const res = await testApp.app.inject({
+    it("returns 400 when ticketId is missing", async () => {
+      const res = await app.inject({
         method: "POST",
         url: "/events/1/registrations",
         headers: { authorization: `Bearer ${userAccessToken}` },
@@ -140,8 +139,7 @@ describe("Registration Endpoints (Integration)", () => {
       const res = await testApp.app.inject({
         method: "POST",
         url: "/events/invalid/registrations",
-        headers: { authorization: `Bearer ${userAccessToken}` },
-        payload: { ticket_id: 10 },
+        payload: { ticketId: 10 },
       });
 
       expect(res.statusCode).toBe(400);
@@ -156,9 +154,8 @@ describe("Registration Endpoints (Integration)", () => {
 
       await testApp.app.inject({
         method: "POST",
-        url: `/events/${eventId}/registrations`,
-        headers: { authorization: `Bearer ${userAccessToken}` },
-        payload: { ticket_id: ticketId },
+        url: "/events/1/registrations",
+        payload: { ticketId: 10 },
       });
 
       const res = await testApp.app.inject({
@@ -194,9 +191,8 @@ describe("Registration Endpoints (Integration)", () => {
 
       const createRes = await testApp.app.inject({
         method: "POST",
-        url: `/events/${eventId}/registrations`,
-        headers: { authorization: `Bearer ${userAccessToken}` },
-        payload: { ticket_id: ticketId },
+        url: "/events/1/registrations",
+        payload: { ticketId: 10 },
       });
 
       const registrationId = (
