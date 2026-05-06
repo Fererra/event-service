@@ -51,7 +51,7 @@ import { EventCronJobs } from "./modules/events/presentation/cron/event.cron";
 
 // Tickets imports
 import { TicketOrmEntity } from "./modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
-import { RegistrationModuleAdapter as TicketRegistrationModuleAdapter } from "./modules/tickets/infrastructure/adapters/registartion-module.adapter";
+import { RegistrationModuleAdapter as TicketRegistrationModuleAdapter } from "./modules/tickets/infrastructure/adapters/registration-module.adapter";
 import { PostgresTicketRepository } from "./modules/tickets/infrastructure/repositories/postgres-ticket.repository";
 import { PostgresTicketReadRepository } from "./modules/tickets/infrastructure/repositories/postgres-ticket-read.repository";
 import { VenueModuleAdapter as TicketVenueModuleAdapter } from "./modules/tickets/infrastructure/adapters/venue-module.adapter";
@@ -64,17 +64,19 @@ import { DeleteTicketUseCase } from "./modules/tickets/application/commands/dele
 import { registerTicketRoutes } from "./modules/tickets/presentation/controllers/ticket.controller";
 
 // Registrations imports
+// Registrations imports
 import { PostgresRegistrationRepository } from "./modules/registrations/infrastructure/repositories/postgres-registration.repository";
+import { PostgresRegistrationReadRepository } from "./modules/registrations/infrastructure/repositories/postgres-registration-read.repository";
 import { RegistrationFactory } from "./modules/registrations/domain/factories/registration.factory";
-import { CreateRegistrationUseCase } from "./modules/registrations/application/use-cases/create-registration.use-case";
-import { GetUserRegistrationsUseCase } from "./modules/registrations/application/use-cases/get-user-registrations.use-case";
-import { GetUserRegistrationUseCase } from "./modules/registrations/application/use-cases/get-user-registration.use-case";
-import { GetEventRegistrationsUseCase } from "./modules/registrations/application/use-cases/get-event-registrations.use-case";
-import { GetEventRegistrationUseCase } from "./modules/registrations/application/use-cases/get-event-registration.use-case";
+import { CreateRegistrationCommandHandler } from "./modules/registrations/application/commands/create-registration/create-registration.handler";
+import { CancelRegistrationCommandHandler } from "./modules/registrations/application/commands/cancel-registration/cancel-registration.handler";
+import { GetUserRegistrationsQueryHandler } from "./modules/registrations/application/queries/get-user-registrations/get-user-registrations.handler";
+import { GetUserRegistrationQueryHandler } from "./modules/registrations/application/queries/get-user-registration/get-user-registration.handler";
+import { GetEventRegistrationsQueryHandler } from "./modules/registrations/application/queries/get-event-registrations/get-event-registrations.handler";
+import { GetEventRegistrationQueryHandler } from "./modules/registrations/application/queries/get-event-registration/get-event-registration.handler";
+import { GetRegistrationsCountQueryHandler } from "./modules/registrations/application/queries/get-registrations-count/get-registrations-count.handler";
 import { registerRegistrationRoutes } from "./modules/registrations/presentation/controllers/registration.controller";
 import { RegistrationOrmEntity } from "./modules/registrations/infrastructure/orm/entities/registration.orm-entity";
-import { CancelRegistrationUseCase } from "./modules/registrations/application/use-cases/cancel-registration.use-case";
-import { GetRegistrationsCountUseCase } from "./modules/registrations/application/use-cases/get-registrations-count.use-case";
 import { EventInfoRepositoryAdapter } from "./modules/registrations/infrastructure/adapters/event-info.repository.adapter";
 import { TicketInfoRepositoryAdapter } from "./modules/registrations/infrastructure/adapters/ticket-info.repository.adapter";
 
@@ -166,7 +168,7 @@ async function bootstrap() {
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
   const syncEventStatusesUseCase = new SyncEventStatusesUseCase(eventRepository);
 
-  // Tickets;
+  // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
   const ticketReadRepository = new PostgresTicketReadRepository(
     dataSource.getRepository(TicketOrmEntity),
@@ -188,38 +190,56 @@ async function bootstrap() {
 
   // Registrations
   const registrationOrmRepository = dataSource.getRepository(RegistrationOrmEntity);
-  const registrationRepository = new PostgresRegistrationRepository(registrationOrmRepository);
+
+  const registrationWriteRepository = new PostgresRegistrationRepository(registrationOrmRepository);
+  const registrationReadRepository = new PostgresRegistrationReadRepository(
+    registrationOrmRepository,
+  );
 
   const eventInfoRepository = new EventInfoRepositoryAdapter(eventRepository);
   const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketRepository);
+
   const registrationFactory = new RegistrationFactory(
-    registrationRepository,
+    registrationWriteRepository,
     ticketInfoRepository,
     eventInfoRepository,
   );
 
-  const createRegistrationUseCase = new CreateRegistrationUseCase(
-    registrationRepository,
+  const createRegistrationHandler = new CreateRegistrationCommandHandler(
+    registrationWriteRepository,
     registrationFactory,
   );
-  const getUserRegistrationsUseCase = new GetUserRegistrationsUseCase(registrationRepository);
-  const getUserRegistrationUseCase = new GetUserRegistrationUseCase(registrationRepository);
-  const getEventRegistrationsUseCase = new GetEventRegistrationsUseCase(registrationRepository);
-  const getEventRegistrationUseCase = new GetEventRegistrationUseCase(registrationRepository);
-  const cancelRegistrationUseCase = new CancelRegistrationUseCase(registrationRepository);
-  const getRegistrationsCountUseCase = new GetRegistrationsCountUseCase(
-    registrationRepository,
-    ticketInfoRepository,
+  const cancelRegistrationHandler = new CancelRegistrationCommandHandler(
+    registrationWriteRepository,
+  );
+
+  const getUserRegistrationsHandler = new GetUserRegistrationsQueryHandler(
+    registrationReadRepository,
+  );
+  const getUserRegistrationHandler = new GetUserRegistrationQueryHandler(
+    registrationReadRepository,
+  );
+  const getEventRegistrationsHandler = new GetEventRegistrationsQueryHandler(
+    registrationReadRepository,
+    eventInfoRepository,
+  );
+  const getEventRegistrationHandler = new GetEventRegistrationQueryHandler(
+    registrationReadRepository,
     eventInfoRepository,
   );
 
-  // Events create use case depends on tickets for TicketCreatorAdapter
+  const getRegistrationsCountHandler = new GetRegistrationsCountQueryHandler(
+    registrationReadRepository,
+    eventInfoRepository,
+    ticketInfoRepository,
+  );
+
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
   const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, ticketCreator);
 
   // Tickets update and delete use cases depend on registration for ticketRegistrationAdapter
   const ticketRegistrationAdapter = new TicketRegistrationModuleAdapter(
-    getRegistrationsCountUseCase,
+    getRegistrationsCountHandler,
   );
   const updateTicketUseCase = new UpdateTicketUseCase(
     ticketRepository,
@@ -288,13 +308,13 @@ async function bootstrap() {
   registerRegistrationRoutes(
     app,
     {
-      createRegistrationUseCase,
-      getUserRegistrationsUseCase,
-      getUserRegistrationUseCase,
-      getEventRegistrationsUseCase,
-      getEventRegistrationUseCase,
-      cancelRegistrationUseCase,
-      getRegistrationsCountUseCase,
+      createRegistrationHandler,
+      cancelRegistrationHandler,
+      getUserRegistrationsHandler,
+      getUserRegistrationHandler,
+      getEventRegistrationsHandler,
+      getEventRegistrationHandler,
+      getRegistrationsCountHandler,
     },
     guards,
   );
