@@ -1,40 +1,40 @@
 import { FastifyInstance, preHandlerHookHandler } from "fastify";
-import { CreateRegistrationUseCase } from "../../application/use-cases/create-registration.use-case";
-import { GetUserRegistrationsUseCase } from "../../application/use-cases/get-user-registrations.use-case";
-import { GetUserRegistrationUseCase } from "../../application/use-cases/get-user-registration.use-case";
-import { GetEventRegistrationsUseCase } from "../../application/use-cases/get-event-registrations.use-case";
-import { GetEventRegistrationUseCase } from "../../application/use-cases/get-event-registration.use-case";
-import { CancelRegistrationUseCase } from "../../application/use-cases/cancel-registration.use-case";
-
-import {
-  CancelRegistrationRoute,
-  CancelRegistrationSchema,
-  CreateRegistrationRoute,
-  CreateRegistrationSchema,
-  GetEventRegistrationRoute,
-  GetEventRegistrationSchema,
-  GetEventRegistrationsRoute,
-  GetEventRegistrationsSchema,
-  GetRegistrationsCountRoute,
-  GetRegistrationsCountSchema,
-  GetUserRegistrationRoute,
-  GetUserRegistrationSchema,
-  GetUserRegistrationsRoute,
-  GetUserRegistrationsSchema,
-} from "../../presentation/dto/registration.dto";
-import { RegistrationDtoMapper } from "../mappers/registration-dto.mapper";
-import { GetRegistrationsCountUseCase } from "../../application/use-cases/get-registrations-count.use-case";
+import { CreateRegistrationCommandHandler } from "../../application/commands/create-registration/create-registration.handler";
+import { CreateRegistrationCommand } from "../../application/commands/create-registration/create-registration.command";
+import { CancelRegistrationCommandHandler } from "../../application/commands/cancel-registration/cancel-registration.handler";
+import { CancelRegistrationCommand } from "../../application/commands/cancel-registration/cancel-registration.command";
+import { GetUserRegistrationsQueryHandler } from "../../application/queries/get-user-registrations/get-user-registrations.handler";
+import { GetUserRegistrationsQuery } from "../../application/queries/get-user-registrations/get-user-registrations.query";
+import { GetUserRegistrationQueryHandler } from "../../application/queries/get-user-registration/get-user-registration.handler";
+import { GetUserRegistrationQuery } from "../../application/queries/get-user-registration/get-user-registration.query";
+import { GetEventRegistrationsQueryHandler } from "../../application/queries/get-event-registrations/get-event-registrations.handler";
+import { GetEventRegistrationsQuery } from "../../application/queries/get-event-registrations/get-event-registrations.query";
+import { GetEventRegistrationQueryHandler } from "../../application/queries/get-event-registration/get-event-registration.handler";
+import { GetEventRegistrationQuery } from "../../application/queries/get-event-registration/get-event-registration.query";
+import { GetRegistrationsCountQueryHandler } from "../../application/queries/get-registrations-count/get-registrations-count.handler";
+import { GetRegistrationsCountQuery } from "../../application/queries/get-registrations-count/get-registrations-count.query";
 import { parseUserRole } from "../../../../shared/domain/value-objects/user-role.enum";
 import { AuthenticatedRequest } from "../../../../shared/presentation/authenicated-request.type";
 
-export interface RegistrationUseCases {
-  createRegistrationUseCase: CreateRegistrationUseCase;
-  getUserRegistrationsUseCase: GetUserRegistrationsUseCase;
-  getUserRegistrationUseCase: GetUserRegistrationUseCase;
-  getEventRegistrationsUseCase: GetEventRegistrationsUseCase;
-  getEventRegistrationUseCase: GetEventRegistrationUseCase;
-  cancelRegistrationUseCase: CancelRegistrationUseCase;
-  getRegistrationsCountUseCase: GetRegistrationsCountUseCase;
+import {
+  CreateRegistrationRequestDto,
+  CreateRegistrationSchema,
+} from "../dto/create-registration.request.dto";
+import { GetUserRegistrationsSchema } from "../dto/get-user-registrations.request.dto";
+import { GetUserRegistrationSchema } from "../dto/get-user-registration.request.dto";
+import { GetEventRegistrationsSchema } from "../dto/get-event-registrations.request.dto";
+import { GetEventRegistrationSchema } from "../dto/get-event-registration.request.dto";
+import { GetRegistrationsCountSchema } from "../dto/get-registrations-count.request.dto";
+import { CancelRegistrationSchema } from "../dto/cancel-registration.request.dto";
+
+export interface RegistrationHandlers {
+  createRegistrationHandler: CreateRegistrationCommandHandler;
+  cancelRegistrationHandler: CancelRegistrationCommandHandler;
+  getUserRegistrationsHandler: GetUserRegistrationsQueryHandler;
+  getUserRegistrationHandler: GetUserRegistrationQueryHandler;
+  getEventRegistrationsHandler: GetEventRegistrationsQueryHandler;
+  getEventRegistrationHandler: GetEventRegistrationQueryHandler;
+  getRegistrationsCountHandler: GetRegistrationsCountQueryHandler;
 }
 
 export interface RegistrationRouteGuards {
@@ -44,112 +44,101 @@ export interface RegistrationRouteGuards {
 
 export function registerRegistrationRoutes(
   app: FastifyInstance,
-  useCases: RegistrationUseCases,
+  handlers: RegistrationHandlers,
   guards: RegistrationRouteGuards,
-) {
-  const {
-    createRegistrationUseCase,
-    getUserRegistrationsUseCase,
-    getUserRegistrationUseCase,
-    getEventRegistrationsUseCase,
-    getEventRegistrationUseCase,
-    cancelRegistrationUseCase,
-    getRegistrationsCountUseCase,
-  } = useCases;
-  const adminGuard = guards.adminGuard;
-  const jwtGuard = guards.jwtGuard;
-
-  app.post<CreateRegistrationRoute>(
+): void {
+  app.post<{ Params: { eventId: string }; Body: CreateRegistrationRequestDto }>(
     "/events/:eventId/registrations",
-    { preHandler: jwtGuard, schema: CreateRegistrationSchema },
+    { preHandler: guards.jwtGuard, schema: CreateRegistrationSchema },
     async (req, reply) => {
       const user = (req as AuthenticatedRequest).user;
+      const command = new CreateRegistrationCommand(
+        user.id,
+        Number(req.params.eventId),
+        req.body.ticketId,
+      );
 
-      const registration = await createRegistrationUseCase.execute({
-        eventId: Number(req.params.eventId),
-        userId: user.id,
-        ticketId: req.body.ticket_id,
-      });
+      const registrationId = await handlers.createRegistrationHandler.handle(command);
 
       reply.status(201).send({
-        registration: {
-          id: registration.id,
-          user_id: registration.userId,
-          ticket_id: registration.ticketId,
-          registration_timestamp: registration.registrationTimestamp.toISOString(),
-        },
-        event: {
-          event_id: Number(req.params.eventId),
-        },
+        registration: { id: registrationId },
+        event: { event_id: Number(req.params.eventId) },
       });
     },
   );
 
-  app.get<GetUserRegistrationsRoute>(
+  app.get<{ Params: { userId: string } }>(
     "/users/:userId/registrations",
-    { preHandler: [jwtGuard], schema: GetUserRegistrationsSchema },
+    { preHandler: guards.jwtGuard, schema: GetUserRegistrationsSchema },
     async (req, reply) => {
       const user = (req as AuthenticatedRequest).user;
 
-      const registrations = await getUserRegistrationsUseCase.execute(
+      const query = new GetUserRegistrationsQuery(
         req.params.userId,
         user.id,
         parseUserRole(user.role),
       );
 
-      return reply.send(RegistrationDtoMapper.toDtoList(registrations));
+      const registrations = await handlers.getUserRegistrationsHandler.handle(query);
+      reply.send(registrations);
     },
   );
 
-  app.get<GetUserRegistrationRoute>(
+  app.get<{ Params: { userId: string; registrationId: string } }>(
     "/users/:userId/registrations/:registrationId",
-    { preHandler: [jwtGuard], schema: GetUserRegistrationSchema },
+    { preHandler: guards.jwtGuard, schema: GetUserRegistrationSchema },
     async (req, reply) => {
       const user = (req as AuthenticatedRequest).user;
 
-      const registration = await getUserRegistrationUseCase.execute(
+      const query = new GetUserRegistrationQuery(
         req.params.registrationId,
         req.params.userId,
+        user.id,
         parseUserRole(user.role),
       );
 
-      return reply.send(RegistrationDtoMapper.toDto(registration));
+      const registration = await handlers.getUserRegistrationHandler.handle(query);
+      reply.send(registration);
     },
   );
 
-  app.get<GetEventRegistrationsRoute>(
+  app.get<{ Params: { eventId: string } }>(
     "/events/:eventId/registrations",
-    { preHandler: [jwtGuard, adminGuard], schema: GetEventRegistrationsSchema },
+    { preHandler: [guards.jwtGuard, guards.adminGuard], schema: GetEventRegistrationsSchema },
     async (req, reply) => {
-      const registrations = await getEventRegistrationsUseCase.execute(Number(req.params.eventId));
+      const query = new GetEventRegistrationsQuery(Number(req.params.eventId));
+      const registrations = await handlers.getEventRegistrationsHandler.handle(query);
 
-      return reply.send(RegistrationDtoMapper.toDtoList(registrations));
+      reply.send(registrations);
     },
   );
 
-  app.get<GetEventRegistrationRoute>(
+  app.get<{ Params: { eventId: string; registrationId: string } }>(
     "/events/:eventId/registrations/:registrationId",
-    { preHandler: [jwtGuard, adminGuard], schema: GetEventRegistrationSchema },
+    { preHandler: [guards.jwtGuard, guards.adminGuard], schema: GetEventRegistrationSchema },
     async (req, reply) => {
-      const registration = await getEventRegistrationUseCase.execute(
+      const query = new GetEventRegistrationQuery(
         req.params.registrationId,
         Number(req.params.eventId),
       );
 
-      return reply.send(RegistrationDtoMapper.toDto(registration));
+      const registration = await handlers.getEventRegistrationHandler.handle(query);
+      reply.send(registration);
     },
   );
 
-  app.get<GetRegistrationsCountRoute>(
+  app.get<{ Params: { eventId: string; ticketId: string } }>(
     "/events/:eventId/tickets/:ticketId/registrations/count",
-    { preHandler: [jwtGuard, adminGuard], schema: GetRegistrationsCountSchema },
+    { preHandler: [guards.jwtGuard, guards.adminGuard], schema: GetRegistrationsCountSchema },
     async (req, reply) => {
-      const count = await getRegistrationsCountUseCase.execute(
+      const query = new GetRegistrationsCountQuery(
         Number(req.params.eventId),
         Number(req.params.ticketId),
       );
 
-      return reply.send({
+      const count = await handlers.getRegistrationsCountHandler.handle(query);
+
+      reply.send({
         eventId: req.params.eventId,
         ticketId: req.params.ticketId,
         count,
@@ -157,19 +146,21 @@ export function registerRegistrationRoutes(
     },
   );
 
-  app.delete<CancelRegistrationRoute>(
+  app.delete<{ Params: { userId: string; registrationId: string } }>(
     "/users/:userId/registrations/:registrationId",
-    { preHandler: [jwtGuard], schema: CancelRegistrationSchema },
+    { preHandler: guards.jwtGuard, schema: CancelRegistrationSchema },
     async (req, reply) => {
       const user = (req as AuthenticatedRequest).user;
 
-      await cancelRegistrationUseCase.execute(
+      const command = new CancelRegistrationCommand(
         req.params.registrationId,
+        req.params.userId,
         user.id,
         parseUserRole(user.role),
       );
 
-      return reply.status(204).send();
+      await handlers.cancelRegistrationHandler.handle(command);
+      reply.code(204).send();
     },
   );
 }
