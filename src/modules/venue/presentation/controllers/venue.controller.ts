@@ -59,7 +59,6 @@ export function venueRoutes(app: FastifyInstance, handlers: VenueHandlers, guard
     async (request, reply) => {
       const query = new GetVenueByIdQuery(request.params.id);
       const venue = await handlers.getVenueByIdHandler.handle(query);
-
       reply.send(venue);
     },
   );
@@ -92,7 +91,7 @@ export function venueRoutes(app: FastifyInstance, handlers: VenueHandlers, guard
       const command = new UpdateVenueCommand(
         request.params.id,
         request.body.name,
-        request.body.capacity ?? null,
+        request.body.capacity,
         request.body.address,
       );
 
