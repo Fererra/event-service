@@ -64,7 +64,6 @@ import { DeleteTicketUseCase } from "./modules/tickets/application/commands/dele
 import { registerTicketRoutes } from "./modules/tickets/presentation/controllers/ticket.controller";
 
 // Registrations imports
-// Registrations imports
 import { PostgresRegistrationRepository } from "./modules/registrations/infrastructure/repositories/postgres-registration.repository";
 import { PostgresRegistrationReadRepository } from "./modules/registrations/infrastructure/repositories/postgres-registration-read.repository";
 import { RegistrationFactory } from "./modules/registrations/domain/factories/registration.factory";
@@ -84,6 +83,16 @@ import { GetMeQueryHandler } from "./modules/auth/application/queries/get-me.que
 import { GetUserQueryHandler } from "./modules/auth/application/queries/get-user.query-handler";
 import { GetUsersQueryHandler } from "./modules/auth/application/queries/get-users.query-handler";
 import { registerUserRoutes } from "./modules/auth/presentation/controllers/user.controller";
+
+// Notifications
+import { ConsoleNotificationService } from "./modules/notifications/infrastructure/console.notification.service";
+import { InProcessEventBus } from "./shared/infrastructure/event-bus/in-process-event-bus";
+import { RegistrationCreatedCommandHandler } from "./modules/notifications/application/handlers/registration-created.handler";
+import { EventCancelledCommandHandler } from "./modules/notifications/application/handlers/event-cancelled.handler";
+import { RegistrationCreatedEvent } from "./shared/domain/events/registration-created.event";
+import { EventCancelledEvent } from "./shared/domain/events/event-cancelled.event";
+import { CreateRegistrationAsyncCommandHandler } from "./modules/registrations/application/commands/create-registration/create-registration-async.handler";
+import { CancelEventAsyncUseCase } from "./modules/events/application/commands/cancel-event-async.use-case";
 
 async function bootstrap() {
   const config = {
@@ -176,7 +185,6 @@ async function bootstrap() {
   const getEventUseCase = new GetEventUseCase(eventReadRepository);
 
   const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventVenueAdapter);
-  const cancelEventUseCase = new CancelEventUseCase(eventRepository);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
   const syncEventStatusesUseCase = new SyncEventStatusesUseCase(eventRepository);
 
@@ -212,16 +220,44 @@ async function bootstrap() {
   const eventInfoRepository = new EventInfoRepositoryAdapter(eventRepository);
   const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketRepository);
 
+  const notificationService = new ConsoleNotificationService();
+
+  // Event Bus
+  const eventBus = new InProcessEventBus();
+  const registrationCreatedNotificationHandler = new RegistrationCreatedCommandHandler(
+    notificationService,
+  );
+  const eventCancelledNotificationHandler = new EventCancelledCommandHandler(notificationService);
+
+  eventBus.subscribe(RegistrationCreatedEvent, (e) =>
+    registrationCreatedNotificationHandler.handle(e),
+  );
+  eventBus.subscribe(EventCancelledEvent, (e) => eventCancelledNotificationHandler.handle(e));
+
   const registrationFactory = new RegistrationFactory(
     registrationWriteRepository,
     ticketInfoRepository,
     eventInfoRepository,
   );
 
+  // Sync варіанти
   const createRegistrationHandler = new CreateRegistrationCommandHandler(
     registrationWriteRepository,
     registrationFactory,
+    eventInfoRepository,
+    notificationService,
   );
+  const cancelEventUseCase = new CancelEventUseCase(eventRepository, notificationService);
+
+  // Async варіанти
+  const createRegistrationAsyncHandler = new CreateRegistrationAsyncCommandHandler(
+    registrationWriteRepository,
+    registrationFactory,
+    eventInfoRepository,
+    eventBus,
+  );
+  const cancelEventAsyncUseCase = new CancelEventAsyncUseCase(eventRepository, eventBus);
+
   const cancelRegistrationHandler = new CancelRegistrationCommandHandler(
     registrationWriteRepository,
   );
