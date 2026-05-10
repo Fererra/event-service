@@ -1,24 +1,57 @@
-import { FastifyInstance } from "fastify";
-import { buildTestVenueApp, TestVenueApp } from "./app.builder";
+import {
+  buildIntegrationTestApp,
+  IntegrationTestApp,
+} from "../../../shared/integration-app.builder";
 
 describe("Venue Endpoints (Integration)", () => {
-  let testApp: TestVenueApp;
-  let app: FastifyInstance;
+  let testApp: IntegrationTestApp;
+  let adminAccessToken: string;
 
   beforeEach(async () => {
-    testApp = await buildTestVenueApp();
-    app = testApp.app;
+    testApp = await buildIntegrationTestApp();
+    await testApp.dataSource.query(
+      "TRUNCATE users, refresh_tokens, venues, events, tickets, registrations RESTART IDENTITY CASCADE",
+    );
+
+    const signupRes = await testApp.app.inject({
+      method: "POST",
+      url: "/auth/signup",
+      payload: {
+        email: "admin@example.com",
+        nickname: "admin",
+        password: "password123",
+      },
+    });
+
+    const signupBody = signupRes.json() as { userId: string };
+    await testApp.dataSource.query("UPDATE users SET role = $1 WHERE id = $2", [
+      "admin",
+      signupBody.userId,
+    ]);
+
+    const loginRes = await testApp.app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: {
+        email: "admin@example.com",
+        password: "password123",
+      },
+    });
+
+    adminAccessToken = (loginRes.json() as { tokens: { accessToken: string } }).tokens.accessToken;
   });
 
   afterEach(async () => {
-    await app.close();
+    await testApp.app.close();
+    await testApp.dataSource.destroy();
   });
 
   describe("POST /venues", () => {
     it("creates venue and returns 201", async () => {
-      const res = await app.inject({
+      const res = await testApp.app.inject({
         method: "POST",
         url: "/venues",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
         payload: {
           name: "Main Hall",
           capacity: 500,
@@ -32,9 +65,10 @@ describe("Venue Endpoints (Integration)", () => {
     });
 
     it("returns 400 when name is missing", async () => {
-      const res = await app.inject({
+      const res = await testApp.app.inject({
         method: "POST",
         url: "/venues",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
         payload: {
           capacity: 500,
           address: "123 Main St",
@@ -47,9 +81,10 @@ describe("Venue Endpoints (Integration)", () => {
 
   describe("GET /venues", () => {
     it("returns all venues", async () => {
-      await app.inject({
+      await testApp.app.inject({
         method: "POST",
         url: "/venues",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
         payload: {
           name: "Hall 1",
           capacity: 500,
@@ -57,9 +92,10 @@ describe("Venue Endpoints (Integration)", () => {
         },
       });
 
-      const res = await app.inject({
+      const res = await testApp.app.inject({
         method: "GET",
         url: "/venues",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
       });
 
       expect(res.statusCode).toBe(200);
@@ -69,9 +105,10 @@ describe("Venue Endpoints (Integration)", () => {
     });
 
     it("returns empty array when no venues", async () => {
-      const res = await app.inject({
+      const res = await testApp.app.inject({
         method: "GET",
         url: "/venues",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
       });
 
       expect(res.statusCode).toBe(200);
@@ -82,9 +119,10 @@ describe("Venue Endpoints (Integration)", () => {
 
   describe("GET /venues/:venueId", () => {
     it("returns venue by id", async () => {
-      const createRes = await app.inject({
+      const createRes = await testApp.app.inject({
         method: "POST",
         url: "/venues",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
         payload: {
           name: "Main Hall",
           capacity: 500,
@@ -94,9 +132,10 @@ describe("Venue Endpoints (Integration)", () => {
 
       const venueId = (createRes.json() as Record<string, unknown>).id;
 
-      const res = await app.inject({
+      const res = await testApp.app.inject({
         method: "GET",
         url: `/venues/${venueId}`,
+        headers: { authorization: `Bearer ${adminAccessToken}` },
       });
 
       expect(res.statusCode).toBe(200);
@@ -107,9 +146,10 @@ describe("Venue Endpoints (Integration)", () => {
 
   describe("PATCH /venues/:venueId", () => {
     it("updates venue and returns 204", async () => {
-      const createRes = await app.inject({
+      const createRes = await testApp.app.inject({
         method: "POST",
         url: "/venues",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
         payload: {
           name: "Main Hall",
           capacity: 500,
@@ -119,9 +159,10 @@ describe("Venue Endpoints (Integration)", () => {
 
       const venueId = (createRes.json() as Record<string, unknown>).id;
 
-      const res = await app.inject({
+      const res = await testApp.app.inject({
         method: "PATCH",
         url: `/venues/${venueId}`,
+        headers: { authorization: `Bearer ${adminAccessToken}` },
         payload: {
           name: "Updated Hall",
         },
@@ -133,9 +174,10 @@ describe("Venue Endpoints (Integration)", () => {
 
   describe("DELETE /venues/:venueId", () => {
     it("deletes venue and returns 204", async () => {
-      const createRes = await app.inject({
+      const createRes = await testApp.app.inject({
         method: "POST",
         url: "/venues",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
         payload: {
           name: "Main Hall",
           capacity: 500,
@@ -145,18 +187,20 @@ describe("Venue Endpoints (Integration)", () => {
 
       const venueId = (createRes.json() as Record<string, unknown>).id;
 
-      const res = await app.inject({
+      const res = await testApp.app.inject({
         method: "DELETE",
         url: `/venues/${venueId}`,
+        headers: { authorization: `Bearer ${adminAccessToken}` },
       });
 
       expect(res.statusCode).toBe(204);
     });
 
     it("returns 409 when deleting venue with events", async () => {
-      const createRes = await app.inject({
+      const createRes = await testApp.app.inject({
         method: "POST",
         url: "/venues",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
         payload: {
           name: "Main Hall",
           capacity: 500,
@@ -165,11 +209,24 @@ describe("Venue Endpoints (Integration)", () => {
       });
 
       const venueId = (createRes.json() as Record<string, unknown>).id as string;
-      testApp.eventChecker.setHasEvents(venueId, true);
+      await testApp.app.inject({
+        method: "POST",
+        url: "/events",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
+        payload: {
+          name: "Hall Event",
+          organisator: "Org",
+          description: "Desc",
+          start_timestamp: new Date(Date.now() + 1000).toISOString(),
+          end_timestamp: new Date(Date.now() + 2000).toISOString(),
+          venue_id: venueId,
+        },
+      });
 
-      const res = await app.inject({
+      const res = await testApp.app.inject({
         method: "DELETE",
         url: `/venues/${venueId}`,
+        headers: { authorization: `Bearer ${adminAccessToken}` },
       });
 
       expect(res.statusCode).toBe(409);

@@ -11,9 +11,11 @@
     "docker:restart": "docker compose restart app",
     "db:up": "docker compose up postgres -d",
     "db:down": "docker compose stop postgres",
+    "db:test:up": "docker compose up postgres-test -d",
+    "db:test:down": "docker compose stop postgres-test",
     "docker:clean": "docker compose down -v --remove-orphans",
     "test": "jest --config test/jest.config.ts",
-    "test:integration": "jest --config test/jest.integration.config.ts",
+    "test:integration": "jest --config test/jest.integration.config.ts --runInBand",
     "test:all": "npm test && npm run test:integration",
     "test:watch": "jest --config test/jest.config.ts --watch",
     "test:coverage": "jest --config test/jest.config.ts --coverage"

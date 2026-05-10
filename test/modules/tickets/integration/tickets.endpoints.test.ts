@@ -1,24 +1,93 @@
-import { buildTestApp } from "./app.builder";
-import { FastifyInstance } from "fastify";
+import {
+  buildIntegrationTestApp,
+  IntegrationTestApp,
+} from "../../../shared/integration-app.builder";
 import { TicketType } from "../../../../src/modules/tickets/domain/value-objects/ticket-type.enum";
 
 describe("Tickets Endpoints (Integration, in-memory)", () => {
-  let ctx: Awaited<ReturnType<typeof buildTestApp>>;
-  let app: FastifyInstance;
+  let testApp: IntegrationTestApp;
+  let adminAccessToken: string;
 
   beforeEach(async () => {
-    ctx = await buildTestApp();
-    app = ctx.app;
+    testApp = await buildIntegrationTestApp();
+    await testApp.dataSource.query(
+      "TRUNCATE users, refresh_tokens, venues, events, tickets, registrations RESTART IDENTITY CASCADE",
+    );
+
+    const signupRes = await testApp.app.inject({
+      method: "POST",
+      url: "/auth/signup",
+      payload: {
+        email: "admin@example.com",
+        nickname: "admin",
+        password: "password123",
+      },
+    });
+
+    const adminUserId = (signupRes.json() as { userId: string }).userId;
+    await testApp.dataSource.query("UPDATE users SET role = $1 WHERE id = $2", [
+      "admin",
+      adminUserId,
+    ]);
+
+    const loginRes = await testApp.app.inject({
+      method: "POST",
+      url: "/auth/login",
+      payload: {
+        email: "admin@example.com",
+        password: "password123",
+      },
+    });
+
+    adminAccessToken = (loginRes.json() as { tokens: { accessToken: string } }).tokens.accessToken;
   });
 
   afterEach(async () => {
-    await app.close();
+    await testApp.app.close();
+    await testApp.dataSource.destroy();
   });
 
-  it("POST /events/:eventId/tickets -> 201 and returns created ticket", async () => {
-    const res = await app.inject({
+  async function createVenue(): Promise<string> {
+    const res = await testApp.app.inject({
       method: "POST",
-      url: "/events/1/tickets",
+      url: "/venues",
+      headers: { authorization: `Bearer ${adminAccessToken}` },
+      payload: {
+        name: "Main Hall",
+        capacity: 500,
+        address: "123 Main St",
+      },
+    });
+
+    return (res.json() as { id: string }).id;
+  }
+
+  async function createEvent(venueId: string): Promise<number> {
+    const res = await testApp.app.inject({
+      method: "POST",
+      url: "/events",
+      headers: { authorization: `Bearer ${adminAccessToken}` },
+      payload: {
+        name: "Concert",
+        organisator: "Org",
+        description: "Desc",
+        start_timestamp: new Date(Date.now() + 1000).toISOString(),
+        end_timestamp: new Date(Date.now() + 2000).toISOString(),
+        venue_id: venueId,
+      },
+    });
+
+    return (res.json() as { event: { id: number } }).event.id;
+  }
+
+  it("POST /events/:eventId/tickets -> 201 and returns created ticket", async () => {
+    const venueId = await createVenue();
+    const eventId = await createEvent(venueId);
+
+    const res = await testApp.app.inject({
+      method: "POST",
+      url: `/events/${eventId}/tickets`,
+      headers: { authorization: `Bearer ${adminAccessToken}` },
       payload: {
         type: TicketType.REGULAR,
         limit: 10,
@@ -37,14 +106,21 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
   });
 
   it("GET /events/:eventId/tickets returns list", async () => {
-    const create = await app.inject({
+    const venueId = await createVenue();
+    const eventId = await createEvent(venueId);
+
+    const create = await testApp.app.inject({
       method: "POST",
-      url: "/events/1/tickets",
+      url: `/events/${eventId}/tickets`,
+      headers: { authorization: `Bearer ${adminAccessToken}` },
       payload: { type: TicketType.REGULAR, limit: 5, price: 2 },
     });
     expect(create.statusCode).toBe(201);
 
-    const res = await app.inject({ method: "GET", url: "/events/1/tickets" });
+    const res = await testApp.app.inject({
+      method: "GET",
+      url: `/events/${eventId}/tickets`,
+    });
     expect(res.statusCode).toBe(200);
     const arr = res.json();
     expect(Array.isArray(arr)).toBe(true);
@@ -52,56 +128,101 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
   });
 
   it("PATCH /events/:eventId/tickets/:ticketId -> 204 update", async () => {
-    const create = await app.inject({
+    const venueId = await createVenue();
+    const eventId = await createEvent(venueId);
+
+    const create = await testApp.app.inject({
       method: "POST",
-      url: "/events/1/tickets",
+      url: `/events/${eventId}/tickets`,
+      headers: { authorization: `Bearer ${adminAccessToken}` },
       payload: { type: TicketType.VIP, limit: 3, price: 20 },
     });
     expect(create.statusCode).toBe(201);
     const id = create.json().ticket.id;
 
-    const res = await app.inject({
+    const res = await testApp.app.inject({
       method: "PATCH",
-      url: `/events/1/tickets/${id}`,
+      url: `/events/${eventId}/tickets/${id}`,
+      headers: { authorization: `Bearer ${adminAccessToken}` },
       payload: { limit: 6, price: 18 },
     });
     expect(res.statusCode).toBe(204);
 
-    const list = await app.inject({ method: "GET", url: "/events/1/tickets" });
+    const list = await testApp.app.inject({
+      method: "GET",
+      url: `/events/${eventId}/tickets`,
+    });
     const updated = list.json().find((t: any) => t.id === id);
     expect(updated.limit).toBe(6);
     expect(updated.price).toBe(18);
   });
 
   it("DELETE /events/:eventId/tickets/:ticketId -> 204 when no sold", async () => {
-    const create = await app.inject({
+    const venueId = await createVenue();
+    const eventId = await createEvent(venueId);
+
+    const create = await testApp.app.inject({
       method: "POST",
-      url: "/events/1/tickets",
+      url: `/events/${eventId}/tickets`,
+      headers: { authorization: `Bearer ${adminAccessToken}` },
       payload: { type: TicketType.EARLY_BIRD, limit: 2, price: 1 },
     });
     expect(create.statusCode).toBe(201);
     const id = create.json().ticket.id;
 
-    const res = await app.inject({ method: "DELETE", url: `/events/1/tickets/${id}` });
+    const res = await testApp.app.inject({
+      method: "DELETE",
+      url: `/events/${eventId}/tickets/${id}`,
+      headers: { authorization: `Bearer ${adminAccessToken}` },
+    });
     expect(res.statusCode).toBe(204);
 
-    const list = await app.inject({ method: "GET", url: "/events/1/tickets" });
+    const list = await testApp.app.inject({
+      method: "GET",
+      url: `/events/${eventId}/tickets`,
+    });
     expect(list.statusCode).toBe(200);
     expect(list.json().some((t: any) => t.id === id)).toBe(false);
   });
 
   it("DELETE fails when sold > 0", async () => {
-    const create = await app.inject({
+    const venueId = await createVenue();
+    const eventId = await createEvent(venueId);
+
+    const create = await testApp.app.inject({
       method: "POST",
-      url: "/events/1/tickets",
+      url: `/events/${eventId}/tickets`,
+      headers: { authorization: `Bearer ${adminAccessToken}` },
       payload: { type: TicketType.REGULAR, limit: 10, price: 5 },
     });
     expect(create.statusCode).toBe(201);
     const id = create.json().ticket.id;
 
-    ctx.registrationRepo.setCount(1, id, 2);
+    const userSignup = await testApp.app.inject({
+      method: "POST",
+      url: "/auth/signup",
+      payload: {
+        email: "user@example.com",
+        nickname: "user",
+        password: "password123",
+      },
+    });
 
-    const res = await app.inject({ method: "DELETE", url: `/events/1/tickets/${id}` });
+    const userAccessToken = (userSignup.json() as { tokens: { accessToken: string } }).tokens
+      .accessToken;
+
+    await testApp.app.inject({
+      method: "POST",
+      url: `/events/${eventId}/registrations`,
+      headers: { authorization: `Bearer ${userAccessToken}` },
+      payload: { ticket_id: id },
+    });
+
+    const res = await testApp.app.inject({
+      method: "DELETE",
+      url: `/events/${eventId}/tickets/${id}`,
+      headers: { authorization: `Bearer ${adminAccessToken}` },
+    });
     expect(res.statusCode).toBe(400);
   });
 });
