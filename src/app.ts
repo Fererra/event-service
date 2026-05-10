@@ -9,10 +9,10 @@ import { Argon2PasswordService } from "./modules/auth/infrastructure/services/ar
 import { JwtTokenService } from "./modules/auth/infrastructure/services/jwt-token.service";
 import { createJwtGuard } from "./modules/auth/presentation/guards/jwt.guard";
 import { createAdminGuard } from "./modules/auth/presentation/guards/admin.guard";
-import { SignupUseCase } from "./modules/auth/application/commands/signup.use-case";
-import { LoginUseCase } from "./modules/auth/application/commands/login.use-case";
-import { LogoutUseCase } from "./modules/auth/application/commands/logout.use-case";
-import { RefreshTokensUseCase } from "./modules/auth/application/commands/refresh-tokens.use-case";
+import { SignupCommandHandler } from "./modules/auth/application/commands/signup.handler";
+import { LoginCommandHandler } from "./modules/auth/application/commands/login.handler";
+import { LogoutCommandHandler } from "./modules/auth/application/commands/logout.handler";
+import { RefreshTokensCommandHandler } from "./modules/auth/application/commands/refresh-tokens.handler";
 import { registerAuthRoutes } from "./modules/auth/presentation/controllers/auth.controller";
 import { registerExceptionHandlers } from "./shared/presentation/exception.handler";
 import { UserOrmEntity } from "./modules/auth/infrastructure/orm/entities/user.orm-entity";
@@ -79,6 +79,11 @@ import { registerRegistrationRoutes } from "./modules/registrations/presentation
 import { RegistrationOrmEntity } from "./modules/registrations/infrastructure/orm/entities/registration.orm-entity";
 import { EventInfoRepositoryAdapter } from "./modules/registrations/infrastructure/adapters/event-info.repository.adapter";
 import { TicketInfoRepositoryAdapter } from "./modules/registrations/infrastructure/adapters/ticket-info.repository.adapter";
+import { PostgresUserReadRepository } from "./modules/auth/infrastructure/repositories/postgres-user-read.repository";
+import { GetMeQueryHandler } from "./modules/auth/application/queries/get-me.query-handler";
+import { GetUserQueryHandler } from "./modules/auth/application/queries/get-user.query-handler";
+import { GetUsersQueryHandler } from "./modules/auth/application/queries/get-users.query-handler";
+import { registerUserRoutes } from "./modules/auth/presentation/controllers/user.controller";
 
 async function bootstrap() {
   const config = {
@@ -103,6 +108,9 @@ async function bootstrap() {
 
   // Auth
   const userRepository = new PostgresUserRepository(dataSource.getRepository(UserOrmEntity));
+  const userReadRepository = new PostgresUserReadRepository(
+    dataSource.getRepository(UserOrmEntity),
+  );
   const refreshTokenRepository = new PostgresRefreshTokenRepository(
     dataSource.getRepository(RefreshTokenOrmEntity),
   );
@@ -113,24 +121,28 @@ async function bootstrap() {
   const adminGuard = createAdminGuard();
   const guards = { jwtGuard, adminGuard };
 
-  const signupUseCase = new SignupUseCase(
+  const signupUseCase = new SignupCommandHandler(
     userRepository,
     refreshTokenRepository,
     passwordService,
     tokenService,
   );
-  const loginUseCase = new LoginUseCase(
+  const loginUseCase = new LoginCommandHandler(
     userRepository,
     refreshTokenRepository,
     passwordService,
     tokenService,
   );
-  const logoutUseCase = new LogoutUseCase(refreshTokenRepository, tokenService);
-  const refreshTokensUseCase = new RefreshTokensUseCase(
+  const logoutUseCase = new LogoutCommandHandler(refreshTokenRepository, tokenService);
+  const refreshTokensUseCase = new RefreshTokensCommandHandler(
     userRepository,
     refreshTokenRepository,
     tokenService,
   );
+
+  const getMeHandler = new GetMeQueryHandler(userReadRepository);
+  const getUserHandler = new GetUserQueryHandler(userReadRepository);
+  const getUsersHandler = new GetUsersQueryHandler(userReadRepository);
 
   // Venues
   const venueOrmRepo = dataSource.getRepository(VenueOrmEntity);
@@ -281,6 +293,8 @@ async function bootstrap() {
     logoutUseCase,
     refreshTokensUseCase,
   });
+
+  registerUserRoutes(app, { getMeHandler, getUserHandler, getUsersHandler }, guards);
 
   registerEventRoutes(
     app,

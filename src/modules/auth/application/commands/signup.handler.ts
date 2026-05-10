@@ -20,7 +20,7 @@ export interface SignupResult {
   userId: string;
 }
 
-export class SignupUseCase {
+export class SignupCommandHandler {
   constructor(
     private readonly userRepo: UserRepository,
     private readonly refreshTokenRepo: RefreshTokenRepository,
@@ -28,7 +28,7 @@ export class SignupUseCase {
     private readonly tokenService: TokenService,
   ) {}
 
-  async execute(command: SignupCommand): Promise<SignupResult> {
+  async handle(command: SignupCommand): Promise<SignupResult> {
     const email = Email.create(command.email);
 
     const emailTaken = await this.userRepo.existsByEmail(email);

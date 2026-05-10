@@ -1,9 +1,6 @@
 import { randomUUID } from "crypto";
 import { RefreshToken } from "../../domain/entities/refresh-token.entity";
-import {
-  UnauthorizedError,
-  NotFoundError,
-} from "../../../../shared/domain/errors/domain.error";
+import { UnauthorizedError, NotFoundError } from "../../../../shared/domain/errors/domain.error";
 import { UserRepository } from "../../domain/repositories/user.repository";
 import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository";
 import { TokenService, TokenPair } from "../ports/token.service";
@@ -12,14 +9,14 @@ export interface RefreshCommand {
   refreshToken: string;
 }
 
-export class RefreshTokensUseCase {
+export class RefreshTokensCommandHandler {
   constructor(
     private readonly userRepo: UserRepository,
     private readonly refreshTokenRepo: RefreshTokenRepository,
     private readonly tokenService: TokenService,
   ) {}
 
-  async execute(command: RefreshCommand): Promise<TokenPair> {
+  async handle(command: RefreshCommand): Promise<TokenPair> {
     let payload: ReturnType<TokenService["verifyRefreshToken"]>;
     try {
       payload = this.tokenService.verifyRefreshToken(command.refreshToken);
@@ -50,11 +47,7 @@ export class RefreshTokensUseCase {
     storedToken.revoke();
     await this.refreshTokenRepo.update(storedToken);
 
-    const tokens = this.tokenService.generateTokenPair(
-      user.id,
-      user.email.value,
-      user.role,
-    );
+    const tokens = this.tokenService.generateTokenPair(user.id, user.email.value, user.role);
 
     const newTokenHash = this.tokenService.hashToken(tokens.refreshToken);
     const newRefreshToken = RefreshToken.create({

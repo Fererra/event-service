@@ -6,13 +6,13 @@ export interface LogoutCommand {
   refreshToken: string;
 }
 
-export class LogoutUseCase {
+export class LogoutCommandHandler {
   constructor(
     private readonly refreshTokenRepo: RefreshTokenRepository,
     private readonly tokenService: TokenService,
   ) {}
 
-  async execute(command: LogoutCommand): Promise<void> {
+  async handle(command: LogoutCommand): Promise<void> {
     const tokenHash = this.tokenService.hashToken(command.refreshToken);
     const storedToken = await this.refreshTokenRepo.findByTokenHash(tokenHash);
 
