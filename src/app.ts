@@ -20,7 +20,6 @@ import { RefreshTokenOrmEntity } from "./modules/auth/infrastructure/orm/entitie
 
 // Venues imports
 import { venueRoutes } from "./modules/venue/presentation/controllers/venue.controller";
-
 import { CreateVenueCommandHandler } from "./modules/venue/application/commands/create-venue/create-venue.handler";
 import { UpdateVenueCommandHandler } from "./modules/venue/application/commands/update-venue/update-venue.handler";
 import { DeleteVenueCommandHandler } from "./modules/venue/application/commands/delete-venue/delete-venue.handler";
@@ -29,8 +28,9 @@ import { GetVenueByIdQueryHandler } from "./modules/venue/application/queries/ge
 import { VenueFactory } from "./modules/venue/domain/factories/venue.factory";
 import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
 import { PostgresVenueReadRepository } from "./modules/venue/infrastructure/repositories/postgres-venue-read.repository";
-import { TypeOrmVenueEventChecker } from "./modules/venue/infrastructure/repositories/venue-event-checker";
+import { VenueEventCheckerAdapter } from "./modules/venue/infrastructure/adapters/venue-event-checker.adapter";
 import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
+import { VenueApi } from "./modules/venue/api/venue.api";
 
 // Events imports
 import { EventOrmEntity } from "./modules/events/infrastructure/orm/entities/event.orm-entity";
@@ -115,6 +115,9 @@ async function bootstrap() {
   const dataSource = createDataSource(config.db);
   await dataSource.initialize();
 
+  // Event Bus
+  const eventBus = new InProcessEventBus();
+
   // Auth
   const userRepository = new PostgresUserRepository(dataSource.getRepository(UserOrmEntity));
   const userReadRepository = new PostgresUserReadRepository(
@@ -161,15 +164,29 @@ async function bootstrap() {
 
   const venueFactory = new VenueFactory(venueWriteRepository);
 
-  const createVenueHandler = new CreateVenueCommandHandler(venueWriteRepository, venueFactory);
-  const updateVenueHandler = new UpdateVenueCommandHandler(venueWriteRepository, venueFactory);
+  const createVenueHandler = new CreateVenueCommandHandler(
+    venueWriteRepository,
+    venueFactory,
+    eventBus,
+  );
+  const updateVenueHandler = new UpdateVenueCommandHandler(
+    venueWriteRepository,
+    venueFactory,
+    eventBus,
+  );
 
-  const eventOrmRepo = dataSource.getRepository(EventOrmEntity);
-  const realEventChecker = new TypeOrmVenueEventChecker(eventOrmRepo);
-  const deleteVenueHandler = new DeleteVenueCommandHandler(venueWriteRepository, realEventChecker);
+  const eventApiPlaceholder = { execute: async () => [] } as any;
+  const venueEventChecker = new VenueEventCheckerAdapter(eventApiPlaceholder);
+
+  const deleteVenueHandler = new DeleteVenueCommandHandler(
+    venueWriteRepository,
+    venueEventChecker,
+    eventBus,
+  );
 
   const getAllVenuesHandler = new GetAllVenuesQueryHandler(venueReadRepository);
   const getVenueByIdHandler = new GetVenueByIdQueryHandler(venueReadRepository);
+  const venueApi = new VenueApi(getVenueByIdHandler);
 
   // Events
   const eventRepository = new PostgresEventRepository(dataSource.getRepository(EventOrmEntity));
@@ -177,7 +194,7 @@ async function bootstrap() {
     dataSource.getRepository(EventOrmEntity),
   );
 
-  const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdHandler);
+  const eventVenueAdapter = new EventVenueModuleAdapter(venueApi as any);
 
   const eventFactory = new EventFactory(eventVenueAdapter);
 
@@ -190,7 +207,7 @@ async function bootstrap() {
 
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
-  const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdHandler);
+  const ticketVenueAdapter = new TicketVenueModuleAdapter(venueApi as any);
   const ticketReadRepository = new PostgresTicketReadRepository(
     dataSource.getRepository(TicketOrmEntity),
   );
@@ -217,13 +234,11 @@ async function bootstrap() {
     registrationOrmRepository,
   );
 
-  const eventInfoRepository = new EventInfoRepositoryAdapter(eventRepository);
+  const eventInfoRepository = new EventInfoRepositoryAdapter(eventApiPlaceholder);
   const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketRepository);
 
   const notificationService = new ConsoleNotificationService();
 
-  // Event Bus
-  const eventBus = new InProcessEventBus();
   const registrationCreatedNotificationHandler = new RegistrationCreatedCommandHandler(
     notificationService,
   );
