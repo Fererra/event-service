@@ -52,6 +52,16 @@ CREATE TABLE IF NOT EXISTS registrations (
     registration_timestamp TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE IF NOT EXISTS analytics_event_stats (
+    id                  SERIAL PRIMARY KEY, 
+    event_id            INTEGER NOT NULL UNIQUE,
+    event_name          VARCHAR(255) NOT NULL,
+    total_registrations INTEGER NOT NULL DEFAULT 0,
+    cancelled_at        TIMESTAMP NULL,
+    last_activity_at    TIMESTAMP NOT NULL DEFAULT NOW(),
+
+)
+
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_token_hash ON refresh_tokens(token_hash);
 CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id    ON refresh_tokens(user_id);
 
@@ -60,3 +70,5 @@ CREATE INDEX IF NOT EXISTS idx_tickets_event_id ON tickets(event_id);
 
 CREATE INDEX IF NOT EXISTS idx_registrations_user_id ON registrations(user_id);
 CREATE INDEX IF NOT EXISTS idx_registrations_ticket_id ON registrations(ticket_id);
+
+CREATE INDEX IF NOT EXISTS idx_analytics_event_stats_event_id ON analytics_event_stats(event_id);
