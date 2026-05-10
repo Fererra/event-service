@@ -1,16 +1,13 @@
-import { INotificationService } from "../../../notifications/application/ports/notification.service";
+import { IEventBus } from "../../../../shared/application/ports/event-bus.interface";
+import { EventCancelledEvent } from "../../../../shared/domain/events/event-cancelled.event";
 import { NotFoundError, UnauthorizedError } from "../../../../shared/domain/errors/domain.error";
 import { IEventRepository } from "../../domain/repositories/event.repository.interface";
+import { CancelEventCommand } from "./cancel-event.use-case";
 
-export interface CancelEventCommand {
-  eventId: number;
-  requestingUserId: string;
-}
-
-export class CancelEventUseCase {
+export class CancelEventAsyncUseCase {
   constructor(
     private readonly eventsRepository: IEventRepository,
-    private readonly notificationService: INotificationService,
+    private readonly eventBus: IEventBus,
   ) {}
 
   async execute(command: CancelEventCommand): Promise<void> {
@@ -25,14 +22,6 @@ export class CancelEventUseCase {
     event.cancel();
     await this.eventsRepository.save(event);
 
-    try {
-      await this.notificationService.sendEventCancelledNotification({
-        eventId: event.id!,
-        eventName: event.name,
-        ownerId: event.ownerId,
-      });
-    } catch (error) {
-      console.error("[NOTIFICATION] Failed to send event cancelled notification:", error);
-    }
+    await this.eventBus.publish(new EventCancelledEvent(event.id!, event.name, event.ownerId));
   }
 }
