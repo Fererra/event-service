@@ -52,6 +52,7 @@ import { CreateEventUseCase } from "../../src/modules/events/application/command
 import { DeleteEventUseCase } from "../../src/modules/events/application/commands/delete-event.use-case";
 import { registerEventRoutes } from "../../src/modules/events/presentation/controllers/event.controller";
 import { SyncEventStatusesUseCase } from "../../src/modules/events/application/commands/sync-event-statuses.use-case";
+import { ConsoleNotificationService } from "../../src/modules/notifications/infrastructure/console.notification.service";
 
 // Tickets imports
 import { TicketOrmEntity } from "../../src/modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
@@ -179,7 +180,8 @@ export async function buildIntegrationTestApp() {
   const getEventUseCase = new GetEventUseCase(eventReadRepository);
 
   const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventVenueAdapter);
-  const cancelEventUseCase = new CancelEventUseCase(eventRepository);
+  const notificationService = new ConsoleNotificationService();
+  const cancelEventUseCase = new CancelEventUseCase(eventRepository, notificationService);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
   const syncEventStatusesUseCase = new SyncEventStatusesUseCase(eventRepository);
 
@@ -224,6 +226,8 @@ export async function buildIntegrationTestApp() {
   const createRegistrationHandler = new CreateRegistrationCommandHandler(
     registrationWriteRepository,
     registrationFactory,
+    eventInfoRepository,
+    notificationService,
   );
   const cancelRegistrationHandler = new CancelRegistrationCommandHandler(
     registrationWriteRepository,
