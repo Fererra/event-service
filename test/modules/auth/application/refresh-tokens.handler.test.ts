@@ -1,18 +1,15 @@
-import { RefreshTokensUseCase } from "../../../../src/modules/auth/application/commands/refresh-tokens.use-case";
-import { SignupUseCase } from "../../../../src/modules/auth/application/commands/signup.use-case";
+import { RefreshTokensCommandHandler } from "../../../../src/modules/auth/application/commands/refresh-tokens.handler";
+import { SignupCommandHandler } from "../../../../src/modules/auth/application/commands/signup.handler";
 import { UnauthorizedError } from "../../../../src/shared/domain/errors/domain.error";
-import {
-  InMemoryUserRepository,
-  InMemoryRefreshTokenRepository,
-} from "./in-memory.repositories";
+import { InMemoryUserRepository, InMemoryRefreshTokenRepository } from "./in-memory.repositories";
 import { FakePasswordService, FakeTokenService } from "./fakes";
 
-describe("RefreshTokensUseCase", () => {
+describe("RefreshTokensCommandHandler", () => {
   let userRepo: InMemoryUserRepository;
   let refreshTokenRepo: InMemoryRefreshTokenRepository;
   let tokenService: FakeTokenService;
-  let refreshUseCase: RefreshTokensUseCase;
-  let signupUseCase: SignupUseCase;
+  let refreshCommandHandler: RefreshTokensCommandHandler;
+  let signupCommandHandler: SignupCommandHandler;
 
   let userId: string;
   let validRefreshToken: string;
@@ -23,19 +20,19 @@ describe("RefreshTokensUseCase", () => {
     tokenService = new FakeTokenService();
     const passwordService = new FakePasswordService();
 
-    refreshUseCase = new RefreshTokensUseCase(
+    refreshCommandHandler = new RefreshTokensCommandHandler(
       userRepo,
       refreshTokenRepo,
       tokenService,
     );
-    signupUseCase = new SignupUseCase(
+    signupCommandHandler = new SignupCommandHandler(
       userRepo,
       refreshTokenRepo,
       passwordService,
       tokenService,
     );
 
-    const result = await signupUseCase.execute({
+    const result = await signupCommandHandler.handle({
       email: "user@example.com",
       nickname: "johndoe",
       password: "password123",
@@ -45,7 +42,7 @@ describe("RefreshTokensUseCase", () => {
   });
 
   it("returns a new token pair", async () => {
-    const tokens = await refreshUseCase.execute({
+    const tokens = await refreshCommandHandler.handle({
       refreshToken: validRefreshToken,
     });
 
@@ -54,7 +51,7 @@ describe("RefreshTokensUseCase", () => {
   });
 
   it("invalidates the old refresh token (rotation strategy)", async () => {
-    await refreshUseCase.execute({ refreshToken: validRefreshToken });
+    await refreshCommandHandler.handle({ refreshToken: validRefreshToken });
 
     const oldHash = tokenService.hashToken(validRefreshToken);
     const oldToken = await refreshTokenRepo.findByTokenHash(oldHash);
@@ -64,13 +61,13 @@ describe("RefreshTokensUseCase", () => {
   it("stores the new refresh token in the repository", async () => {
     const countBefore = refreshTokenRepo.getAll().length;
 
-    await refreshUseCase.execute({ refreshToken: validRefreshToken });
+    await refreshCommandHandler.handle({ refreshToken: validRefreshToken });
 
     expect(refreshTokenRepo.getAll().length).toBe(countBefore + 1);
   });
 
   it("new refresh token is valid", async () => {
-    const newTokens = await refreshUseCase.execute({
+    const newTokens = await refreshCommandHandler.handle({
       refreshToken: validRefreshToken,
     });
 
@@ -80,23 +77,23 @@ describe("RefreshTokensUseCase", () => {
   });
 
   it("throws UnauthorizedError for an invalid token", async () => {
-    await expect(
-      refreshUseCase.execute({ refreshToken: "invalid-token" }),
-    ).rejects.toThrow(UnauthorizedError);
+    await expect(refreshCommandHandler.handle({ refreshToken: "invalid-token" })).rejects.toThrow(
+      UnauthorizedError,
+    );
   });
 
   it("throws UnauthorizedError when token is not found in DB", async () => {
     await expect(
-      refreshUseCase.execute({ refreshToken: "refresh.unknown-user.user" }),
+      refreshCommandHandler.handle({ refreshToken: "refresh.unknown-user.user" }),
     ).rejects.toThrow(UnauthorizedError);
   });
 
   it("throws UnauthorizedError when token is already revoked", async () => {
-    await refreshUseCase.execute({ refreshToken: validRefreshToken });
+    await refreshCommandHandler.handle({ refreshToken: validRefreshToken });
 
-    await expect(
-      refreshUseCase.execute({ refreshToken: validRefreshToken }),
-    ).rejects.toThrow(UnauthorizedError);
+    await expect(refreshCommandHandler.handle({ refreshToken: validRefreshToken })).rejects.toThrow(
+      UnauthorizedError,
+    );
   });
 
   it("throws UnauthorizedError when token is expired", async () => {
@@ -112,7 +109,7 @@ describe("RefreshTokensUseCase", () => {
     await refreshTokenRepo.save(expiredToken);
 
     await expect(
-      refreshUseCase.execute({ refreshToken: "refresh.expired.user" }),
+      refreshCommandHandler.handle({ refreshToken: "refresh.expired.user" }),
     ).rejects.toThrow(UnauthorizedError);
   });
 });

@@ -1,8 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
-import { SignupUseCase } from "../../application/commands/signup.use-case";
-import { LoginUseCase } from "../../application/commands/login.use-case";
-import { LogoutUseCase } from "../../application/commands/logout.use-case";
-import { RefreshTokensUseCase } from "../../application/commands/refresh-tokens.use-case";
+import { SignupCommandHandler } from "../../application/commands/signup.handler";
+import { LoginCommandHandler } from "../../application/commands/login.handler";
+import { LogoutCommandHandler } from "../../application/commands/logout.handler";
+import { RefreshTokensCommandHandler } from "../../application/commands/refresh-tokens.handler";
 import {
   SignupRequestDto,
   LoginRequestDto,
@@ -17,22 +17,19 @@ import {
 export function registerAuthRoutes(
   app: FastifyInstance,
   deps: {
-    signupUseCase: SignupUseCase;
-    loginUseCase: LoginUseCase;
-    logoutUseCase: LogoutUseCase;
-    refreshTokensUseCase: RefreshTokensUseCase;
+    signupUseCase: SignupCommandHandler;
+    loginUseCase: LoginCommandHandler;
+    logoutUseCase: LogoutCommandHandler;
+    refreshTokensUseCase: RefreshTokensCommandHandler;
   },
 ): void {
   app.post<{ Body: SignupRequestDto }>(
     "/auth/signup",
     { schema: signupSchema },
-    async (
-      request: FastifyRequest<{ Body: SignupRequestDto }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Body: SignupRequestDto }>, reply: FastifyReply) => {
       const { email, nickname, password } = request.body;
 
-      const result = await deps.signupUseCase.execute({
+      const result = await deps.signupUseCase.handle({
         email,
         nickname,
         password,
@@ -48,13 +45,10 @@ export function registerAuthRoutes(
   app.post<{ Body: LoginRequestDto }>(
     "/auth/login",
     { schema: loginSchema },
-    async (
-      request: FastifyRequest<{ Body: LoginRequestDto }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Body: LoginRequestDto }>, reply: FastifyReply) => {
       const { email, password } = request.body;
 
-      const result = await deps.loginUseCase.execute({ email, password });
+      const result = await deps.loginUseCase.handle({ email, password });
 
       return reply.status(200).send({
         userId: result.userId,
@@ -66,11 +60,8 @@ export function registerAuthRoutes(
   app.post<{ Body: LogoutRequestDto }>(
     "/auth/logout",
     { schema: logoutSchema },
-    async (
-      request: FastifyRequest<{ Body: LogoutRequestDto }>,
-      reply: FastifyReply,
-    ) => {
-      await deps.logoutUseCase.execute({
+    async (request: FastifyRequest<{ Body: LogoutRequestDto }>, reply: FastifyReply) => {
+      await deps.logoutUseCase.handle({
         refreshToken: request.body.refreshToken,
       });
       return reply.status(204).send();
@@ -80,11 +71,8 @@ export function registerAuthRoutes(
   app.post<{ Body: RefreshRequestDto }>(
     "/auth/refresh",
     { schema: refreshSchema },
-    async (
-      request: FastifyRequest<{ Body: RefreshRequestDto }>,
-      reply: FastifyReply,
-    ) => {
-      const tokens = await deps.refreshTokensUseCase.execute({
+    async (request: FastifyRequest<{ Body: RefreshRequestDto }>, reply: FastifyReply) => {
+      const tokens = await deps.refreshTokensUseCase.handle({
         refreshToken: request.body.refreshToken,
       });
 

@@ -1,10 +1,7 @@
 import { randomUUID } from "crypto";
 import { RefreshToken } from "../../domain/entities/refresh-token.entity";
 import { Email } from "../../domain/value-objects/email.vo";
-import {
-  NotFoundError,
-  UnauthorizedError,
-} from "../../../../shared/domain/errors/domain.error";
+import { UnauthorizedError } from "../../../../shared/domain/errors/domain.error";
 import { UserRepository } from "../../domain/repositories/user.repository";
 import { RefreshTokenRepository } from "../../domain/repositories/refresh-token.repository";
 import { PasswordService } from "../ports/password.service";
@@ -20,7 +17,7 @@ export interface LoginResult {
   userId: string;
 }
 
-export class LoginUseCase {
+export class LoginCommandHandler {
   constructor(
     private readonly userRepo: UserRepository,
     private readonly refreshTokenRepo: RefreshTokenRepository,
@@ -28,7 +25,7 @@ export class LoginUseCase {
     private readonly tokenService: TokenService,
   ) {}
 
-  async execute(command: LoginCommand): Promise<LoginResult> {
+  async handle(command: LoginCommand): Promise<LoginResult> {
     const email = Email.create(command.email);
 
     const user = await this.userRepo.findByEmail(email);
@@ -36,19 +33,12 @@ export class LoginUseCase {
       throw new UnauthorizedError("Invalid credentials");
     }
 
-    const passwordValid = await this.passwordService.verify(
-      command.password,
-      user.passwordHash,
-    );
+    const passwordValid = await this.passwordService.verify(command.password, user.passwordHash);
     if (!passwordValid) {
       throw new UnauthorizedError("Invalid credentials");
     }
 
-    const tokens = this.tokenService.generateTokenPair(
-      user.id,
-      user.email.value,
-      user.role,
-    );
+    const tokens = this.tokenService.generateTokenPair(user.id, user.email.value, user.role);
 
     const tokenHash = this.tokenService.hashToken(tokens.refreshToken);
     const refreshToken = RefreshToken.create({

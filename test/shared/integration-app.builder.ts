@@ -4,19 +4,24 @@ import { createDataSource } from "../../src/shared/infrastructure/database.confi
 
 // Auth imports
 import { PostgresUserRepository } from "../../src/modules/auth/infrastructure/repositories/postgres-user.repository";
+import { PostgresUserReadRepository } from "../../src/modules/auth/infrastructure/repositories/postgres-user-read.repository";
 import { PostgresRefreshTokenRepository } from "../../src/modules/auth/infrastructure/repositories/postgres-refresh-token.repository";
 import { Argon2PasswordService } from "../../src/modules/auth/infrastructure/services/argon-password.service";
 import { JwtTokenService } from "../../src/modules/auth/infrastructure/services/jwt-token.service";
 import { createJwtGuard } from "../../src/modules/auth/presentation/guards/jwt.guard";
 import { createAdminGuard } from "../../src/modules/auth/presentation/guards/admin.guard";
-import { SignupUseCase } from "../../src/modules/auth/application/commands/signup.use-case";
-import { LoginUseCase } from "../../src/modules/auth/application/commands/login.use-case";
-import { LogoutUseCase } from "../../src/modules/auth/application/commands/logout.use-case";
-import { RefreshTokensUseCase } from "../../src/modules/auth/application/commands/refresh-tokens.use-case";
+import { SignupCommandHandler } from "../../src/modules/auth/application/commands/signup.handler";
+import { LoginCommandHandler } from "../../src/modules/auth/application/commands/login.handler";
+import { LogoutCommandHandler } from "../../src/modules/auth/application/commands/logout.handler";
+import { RefreshTokensCommandHandler } from "../../src/modules/auth/application/commands/refresh-tokens.handler";
 import { registerAuthRoutes } from "../../src/modules/auth/presentation/controllers/auth.controller";
+import { registerUserRoutes } from "../../src/modules/auth/presentation/controllers/user.controller";
 import { registerExceptionHandlers } from "../../src/shared/presentation/exception.handler";
 import { UserOrmEntity } from "../../src/modules/auth/infrastructure/orm/entities/user.orm-entity";
 import { RefreshTokenOrmEntity } from "../../src/modules/auth/infrastructure/orm/entities/refresh-token.orm-entity";
+import { GetMeQueryHandler } from "../../src/modules/auth/application/queries/get-me.query-handler";
+import { GetUserQueryHandler } from "../../src/modules/auth/application/queries/get-user.query-handler";
+import { GetUsersQueryHandler } from "../../src/modules/auth/application/queries/get-users.query-handler";
 
 // Venues imports
 import { venueRoutes } from "../../src/modules/venue/presentation/controllers/venue.controller";
@@ -106,7 +111,9 @@ export async function buildIntegrationTestApp() {
   await dataSource.initialize();
 
   // Auth
-  const userRepository = new PostgresUserRepository(dataSource.getRepository(UserOrmEntity));
+  const userOrmRepo = dataSource.getRepository(UserOrmEntity);
+  const userRepository = new PostgresUserRepository(userOrmRepo);
+  const userReadRepository = new PostgresUserReadRepository(userOrmRepo);
   const refreshTokenRepository = new PostgresRefreshTokenRepository(
     dataSource.getRepository(RefreshTokenOrmEntity),
   );
@@ -117,24 +124,28 @@ export async function buildIntegrationTestApp() {
   const adminGuard = createAdminGuard();
   const guards = { jwtGuard, adminGuard };
 
-  const signupUseCase = new SignupUseCase(
+  const signupUseCase = new SignupCommandHandler(
     userRepository,
     refreshTokenRepository,
     passwordService,
     tokenService,
   );
-  const loginUseCase = new LoginUseCase(
+  const loginUseCase = new LoginCommandHandler(
     userRepository,
     refreshTokenRepository,
     passwordService,
     tokenService,
   );
-  const logoutUseCase = new LogoutUseCase(refreshTokenRepository, tokenService);
-  const refreshTokensUseCase = new RefreshTokensUseCase(
+  const logoutUseCase = new LogoutCommandHandler(refreshTokenRepository, tokenService);
+  const refreshTokensUseCase = new RefreshTokensCommandHandler(
     userRepository,
     refreshTokenRepository,
     tokenService,
   );
+
+  const getMeHandler = new GetMeQueryHandler(userReadRepository);
+  const getUserHandler = new GetUserQueryHandler(userReadRepository);
+  const getUsersHandler = new GetUsersQueryHandler(userReadRepository);
 
   // Venues
   const venueOrmRepo = dataSource.getRepository(VenueOrmEntity);
@@ -281,6 +292,16 @@ export async function buildIntegrationTestApp() {
     logoutUseCase,
     refreshTokensUseCase,
   });
+
+  registerUserRoutes(
+    app,
+    {
+      getMeHandler,
+      getUserHandler,
+      getUsersHandler,
+    },
+    guards,
+  );
 
   registerEventRoutes(
     app,

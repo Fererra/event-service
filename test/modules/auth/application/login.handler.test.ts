@@ -1,19 +1,16 @@
-import { LoginUseCase } from "../../../../src/modules/auth/application/commands/login.use-case";
-import { SignupUseCase } from "../../../../src/modules/auth/application/commands/signup.use-case";
+import { LoginCommandHandler } from "../../../../src/modules/auth/application/commands/login.handler";
+import { SignupCommandHandler } from "../../../../src/modules/auth/application/commands/signup.handler";
 import { UnauthorizedError } from "../../../../src/shared/domain/errors/domain.error";
-import {
-  InMemoryUserRepository,
-  InMemoryRefreshTokenRepository,
-} from "./in-memory.repositories";
+import { InMemoryUserRepository, InMemoryRefreshTokenRepository } from "./in-memory.repositories";
 import { FakePasswordService, FakeTokenService } from "./fakes";
 
-describe("LoginUseCase", () => {
+describe("LoginCommandHandler", () => {
   let userRepo: InMemoryUserRepository;
   let refreshTokenRepo: InMemoryRefreshTokenRepository;
   let passwordService: FakePasswordService;
   let tokenService: FakeTokenService;
-  let loginUseCase: LoginUseCase;
-  let signupUseCase: SignupUseCase;
+  let loginCommandHandler: LoginCommandHandler;
+  let signupCommandHandler: SignupCommandHandler;
 
   beforeEach(async () => {
     userRepo = new InMemoryUserRepository();
@@ -21,20 +18,20 @@ describe("LoginUseCase", () => {
     passwordService = new FakePasswordService();
     tokenService = new FakeTokenService();
 
-    loginUseCase = new LoginUseCase(
+    loginCommandHandler = new LoginCommandHandler(
       userRepo,
       refreshTokenRepo,
       passwordService,
       tokenService,
     );
-    signupUseCase = new SignupUseCase(
+    signupCommandHandler = new SignupCommandHandler(
       userRepo,
       refreshTokenRepo,
       passwordService,
       tokenService,
     );
 
-    await signupUseCase.execute({
+    await signupCommandHandler.handle({
       email: "user@example.com",
       nickname: "johndoe",
       password: "correct-password",
@@ -42,7 +39,7 @@ describe("LoginUseCase", () => {
   });
 
   it("returns tokens for valid credentials", async () => {
-    const result = await loginUseCase.execute({
+    const result = await loginCommandHandler.handle({
       email: "user@example.com",
       password: "correct-password",
     });
@@ -55,7 +52,7 @@ describe("LoginUseCase", () => {
   it("stores a new refresh token after login", async () => {
     const countBefore = refreshTokenRepo.getAll().length;
 
-    await loginUseCase.execute({
+    await loginCommandHandler.handle({
       email: "user@example.com",
       password: "correct-password",
     });
@@ -64,7 +61,7 @@ describe("LoginUseCase", () => {
   });
 
   it("accepts email in any case", async () => {
-    const result = await loginUseCase.execute({
+    const result = await loginCommandHandler.handle({
       email: "USER@EXAMPLE.COM",
       password: "correct-password",
     });
@@ -74,7 +71,7 @@ describe("LoginUseCase", () => {
 
   it("throws UnauthorizedError for wrong password", async () => {
     await expect(
-      loginUseCase.execute({
+      loginCommandHandler.handle({
         email: "user@example.com",
         password: "wrong-password",
       }),
@@ -83,7 +80,7 @@ describe("LoginUseCase", () => {
 
   it("throws UnauthorizedError when email does not exist", async () => {
     await expect(
-      loginUseCase.execute({
+      loginCommandHandler.handle({
         email: "unknown@example.com",
         password: "correct-password",
       }),
@@ -95,7 +92,7 @@ describe("LoginUseCase", () => {
     let wrongPasswordError: Error | null = null;
 
     try {
-      await loginUseCase.execute({
+      await loginCommandHandler.handle({
         email: "ghost@example.com",
         password: "any",
       });
@@ -104,7 +101,7 @@ describe("LoginUseCase", () => {
     }
 
     try {
-      await loginUseCase.execute({
+      await loginCommandHandler.handle({
         email: "user@example.com",
         password: "wrong",
       });
