@@ -2,10 +2,10 @@ import { RegistrationFactory } from "../../../../src/modules/registrations/domai
 import { DomainError, NotFoundError } from "../../../../src/shared/domain/errors/domain.error";
 
 class FakeEventInfoRepository {
-  private events = new Map<number, { id: number }>();
+  private events = new Map<number, { id: number; name: string }>();
 
-  setEvent(id: number): void {
-    this.events.set(id, { id });
+  setEvent(id: number, name: string = "Event"): void {
+    this.events.set(id, { id, name });
   }
 
   async findById(id: number) {

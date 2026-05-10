@@ -1,33 +1,50 @@
-import { CreateRegistrationCommandHandler } from "../../../../../src/modules/registrations/application/commands/create-registration/create-registration.handler";
+import { CreateRegistrationAsyncCommandHandler } from "../../../../../src/modules/registrations/application/commands/create-registration/create-registration-async.handler";
 import { CreateRegistrationCommand } from "../../../../../src/modules/registrations/application/commands/create-registration/create-registration.command";
 import { RegistrationFactory } from "../../../../../src/modules/registrations/domain/factories/registration.factory";
 import { DomainError, NotFoundError } from "../../../../../src/shared/domain/errors/domain.error";
+import { RegistrationCreatedEvent } from "../../../../../src/shared/domain/events/registration-created.event";
+import { IEventBus } from "../../../../../src/shared/application/ports/event-bus.interface";
+import { IntegrationEvent } from "../../../../../src/shared/domain/events/integration-event";
 import {
-  InMemoryRegistrationRepository,
   FakeEventInfoRepository,
   FakeTicketInfoRepository,
+  InMemoryRegistrationRepository,
 } from "../fakes";
-import { FakeNotificationService } from "../../../notifications/application/fakes";
 
-describe("CreateRegistrationCommandHandler", () => {
-  let handler: CreateRegistrationCommandHandler;
+class FakeEventBus implements IEventBus {
+  public published: IntegrationEvent[] = [];
+
+  async publish(event: IntegrationEvent): Promise<void> {
+    this.published.push(event);
+  }
+
+  subscribe<T extends IntegrationEvent>(
+    _eventClass: new (...args: any[]) => T,
+    _handler: (event: T) => Promise<void>,
+  ): void {
+    // no-op for tests
+  }
+}
+
+describe("CreateRegistrationAsyncCommandHandler", () => {
+  let handler: CreateRegistrationAsyncCommandHandler;
   let registrationRepo: InMemoryRegistrationRepository;
   let eventRepo: FakeEventInfoRepository;
   let ticketRepo: FakeTicketInfoRepository;
   let factory: RegistrationFactory;
-  let notificationService: FakeNotificationService;
+  let eventBus: FakeEventBus;
 
   beforeEach(() => {
     registrationRepo = new InMemoryRegistrationRepository();
     eventRepo = new FakeEventInfoRepository();
     ticketRepo = new FakeTicketInfoRepository();
     factory = new RegistrationFactory(registrationRepo, ticketRepo, eventRepo);
-    notificationService = new FakeNotificationService();
-    handler = new CreateRegistrationCommandHandler(
+    eventBus = new FakeEventBus();
+    handler = new CreateRegistrationAsyncCommandHandler(
       registrationRepo,
       factory,
       eventRepo,
-      notificationService,
+      eventBus,
     );
   });
 
@@ -44,21 +61,43 @@ describe("CreateRegistrationCommandHandler", () => {
     expect(saved?.userId).toBe("user-1");
   });
 
-  it("sends registration confirmation when event is found", async () => {
+  it("publishes RegistrationCreatedEvent when event is found", async () => {
     eventRepo.setEvent(1, "Event name");
     ticketRepo.setTicket(10, 1, 100);
 
     const command = new CreateRegistrationCommand("user-1", 1, 10);
     const registrationId = await handler.handle(command);
 
-    expect(notificationService.registrationConfirmations).toHaveLength(1);
-    expect(notificationService.registrationConfirmations[0]).toEqual({
-      registrationId,
-      userId: "user-1",
-      eventId: 1,
-      eventName: "Event name",
-      ticketId: 10,
-    });
+    expect(eventBus.published).toHaveLength(1);
+    expect(eventBus.published[0]).toBeInstanceOf(RegistrationCreatedEvent);
+    expect(eventBus.published[0]).toEqual(
+      expect.objectContaining({
+        registrationId,
+        userId: "user-1",
+        eventId: 1,
+        eventName: "Event name",
+        ticketId: 10,
+      }),
+    );
+  });
+
+  it("does not publish when event info is missing", async () => {
+    const eventRepoForFactory = new FakeEventInfoRepository();
+    const eventRepoForHandler = new FakeEventInfoRepository();
+    eventRepoForFactory.setEvent(1, "Event name");
+    ticketRepo.setTicket(10, 1, 100);
+
+    factory = new RegistrationFactory(registrationRepo, ticketRepo, eventRepoForFactory);
+    handler = new CreateRegistrationAsyncCommandHandler(
+      registrationRepo,
+      factory,
+      eventRepoForHandler,
+      eventBus,
+    );
+
+    await handler.handle(new CreateRegistrationCommand("user-1", 1, 10));
+
+    expect(eventBus.published).toHaveLength(0);
   });
 
   it("throws NotFoundError when event does not exist", async () => {
@@ -69,7 +108,7 @@ describe("CreateRegistrationCommandHandler", () => {
   });
 
   it("throws DomainError when ticket is sold out", async () => {
-    eventRepo.setEvent(1);
+    eventRepo.setEvent(1, "Event name");
     ticketRepo.setTicket(10, 1, 1);
 
     await handler.handle(new CreateRegistrationCommand("user-1", 1, 10));

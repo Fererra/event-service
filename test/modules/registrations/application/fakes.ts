@@ -74,8 +74,8 @@ export class InMemoryRegistrationRepository implements RegistrationRepository {
 export class FakeEventInfoRepository implements IEventInfoRepository {
   private readonly events = new Map<number, EventInfo>();
 
-  setEvent(id: number): void {
-    this.events.set(id, { id });
+  setEvent(id: number, name: string = "Event"): void {
+    this.events.set(id, { id, name });
   }
 
   async findById(id: number): Promise<EventInfo | null> {
