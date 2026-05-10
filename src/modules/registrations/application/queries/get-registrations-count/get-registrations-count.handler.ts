@@ -12,7 +12,6 @@ export class GetRegistrationsCountQueryHandler {
   ) {}
 
   async handle(query: GetRegistrationsCountQuery): Promise<number> {
-    console.log("Checking event:", query.eventId);
     const event = await this.eventInfoRepository.findById(query.eventId);
     if (!event) {
       throw new NotFoundError(`Event with id ${query.eventId} not found`);

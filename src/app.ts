@@ -157,9 +157,6 @@ async function bootstrap() {
   );
 
   const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdHandler);
-  const eventReadRepository = new PostgresEventReadRepository(
-    dataSource.getRepository(EventOrmEntity),
-  );
 
   const eventFactory = new EventFactory(eventVenueAdapter);
 
@@ -173,9 +170,6 @@ async function bootstrap() {
 
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
-  const ticketReadRepository = new PostgresTicketReadRepository(
-    dataSource.getRepository(TicketOrmEntity),
-  );
   const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdHandler);
   const ticketReadRepository = new PostgresTicketReadRepository(
     dataSource.getRepository(TicketOrmEntity),

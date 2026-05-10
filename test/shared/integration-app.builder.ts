@@ -20,23 +20,26 @@ import { RefreshTokenOrmEntity } from "../../src/modules/auth/infrastructure/orm
 
 // Venues imports
 import { venueRoutes } from "../../src/modules/venue/presentation/controllers/venue.controller";
-import { CreateVenueUseCase } from "../../src/modules/venue/application/use-cases/create-venue.use-case";
-import { GetAllVenuesUseCase } from "../../src/modules/venue/application/use-cases/get-venues.use-case";
-import { GetVenueByIdUseCase } from "../../src/modules/venue/application/use-cases/get-venue-by-id.use-case";
-import { UpdateVenueUseCase } from "../../src/modules/venue/application/use-cases/update-venue.use-case";
-import { DeleteVenueUseCase } from "../../src/modules/venue/application/use-cases/delete-venue.use-case";
+
+import { CreateVenueCommandHandler } from "../../src/modules/venue/application/commands/create-venue/create-venue.handler";
+import { UpdateVenueCommandHandler } from "../../src/modules/venue/application/commands/update-venue/update-venue.handler";
+import { DeleteVenueCommandHandler } from "../../src/modules/venue/application/commands/delete-venue/delete-venue.handler";
+import { GetAllVenuesQueryHandler } from "../../src/modules/venue/application/queries/get-all-venues/get-all-venues.handler";
+import { GetVenueByIdQueryHandler } from "../../src/modules/venue/application/queries/get-venue-by-id/get-venue-by-id.handler";
 import { VenueFactory } from "../../src/modules/venue/domain/factories/venue.factory";
 import { PostgresVenueRepository } from "../../src/modules/venue/infrastructure/repositories/postgres-venue.repository";
+import { PostgresVenueReadRepository } from "../../src/modules/venue/infrastructure/repositories/postgres-venue-read.repository";
 import { TypeOrmVenueEventChecker } from "../../src/modules/venue/infrastructure/repositories/venue-event-checker";
 import { VenueOrmEntity } from "../../src/modules/venue/infrastructure/orm/entities/venue.orm-entity";
 
 // Events imports
 import { EventOrmEntity } from "../../src/modules/events/infrastructure/orm/entities/event.orm-entity";
 import { PostgresEventRepository } from "../../src/modules/events/infrastructure/repositories/postgres-event.repository";
+import { PostgresEventReadRepository } from "../../src/modules/events/infrastructure/repositories/postgres-event-read.repository";
 import { VenueModuleAdapter as EventVenueModuleAdapter } from "../../src/modules/events/infrastructure/adapters/venue-module.adapter";
 import { TicketCreatorAdapter } from "../../src/modules/events/infrastructure/adapters/ticket-creator.adapter";
 import { EventFactory } from "../../src/modules/events/domain/factories/event.factory";
-import { GetEventUseCase } from "../../src/modules/events/application/queries/get-event.use.case";
+import { GetEventUseCase } from "../../src/modules/events/application/queries/get-event.use-case";
 import { GetEventsUseCase } from "../../src/modules/events/application/queries/get-events.use-case";
 import { UpdateEventUseCase } from "../../src/modules/events/application/commands/update-event.use-case";
 import { CancelEventUseCase } from "../../src/modules/events/application/commands/cancel-event.use-case";
@@ -47,8 +50,9 @@ import { SyncEventStatusesUseCase } from "../../src/modules/events/application/c
 
 // Tickets imports
 import { TicketOrmEntity } from "../../src/modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
-import { RegistrationModuleAdapter as TicketRegistrationModuleAdapter } from "../../src/modules/tickets/infrastructure/adapters/registartion-module.adapter";
+import { RegistrationModuleAdapter as TicketRegistrationModuleAdapter } from "../../src/modules/tickets/infrastructure/adapters/registration-module.adapter";
 import { PostgresTicketRepository } from "../../src/modules/tickets/infrastructure/repositories/postgres-ticket.repository";
+import { PostgresTicketReadRepository } from "../../src/modules/tickets/infrastructure/repositories/postgres-ticket-read.repository";
 import { VenueModuleAdapter as TicketVenueModuleAdapter } from "../../src/modules/tickets/infrastructure/adapters/venue-module.adapter";
 import { EventLookupAdapter } from "../../src/modules/tickets/infrastructure/adapters/event-lookup.adapter";
 import { TicketFactory } from "../../src/modules/tickets/domain/factories/ticket.factory";
@@ -60,16 +64,17 @@ import { registerTicketRoutes } from "../../src/modules/tickets/presentation/con
 
 // Registrations imports
 import { PostgresRegistrationRepository } from "../../src/modules/registrations/infrastructure/repositories/postgres-registration.repository";
+import { PostgresRegistrationReadRepository } from "../../src/modules/registrations/infrastructure/repositories/postgres-registration-read.repository";
 import { RegistrationFactory } from "../../src/modules/registrations/domain/factories/registration.factory";
-import { CreateRegistrationUseCase } from "../../src/modules/registrations/application/use-cases/create-registration.use-case";
-import { GetUserRegistrationsUseCase } from "../../src/modules/registrations/application/use-cases/get-user-registrations.use-case";
-import { GetUserRegistrationUseCase } from "../../src/modules/registrations/application/use-cases/get-user-registration.use-case";
-import { GetEventRegistrationsUseCase } from "../../src/modules/registrations/application/use-cases/get-event-registrations.use-case";
-import { GetEventRegistrationUseCase } from "../../src/modules/registrations/application/use-cases/get-event-registration.use-case";
+import { CreateRegistrationCommandHandler } from "../../src/modules/registrations/application/commands/create-registration/create-registration.handler";
+import { CancelRegistrationCommandHandler } from "../../src/modules/registrations/application/commands/cancel-registration/cancel-registration.handler";
+import { GetUserRegistrationsQueryHandler } from "../../src/modules/registrations/application/queries/get-user-registrations/get-user-registrations.handler";
+import { GetUserRegistrationQueryHandler } from "../../src/modules/registrations/application/queries/get-user-registration/get-user-registration.handler";
+import { GetEventRegistrationsQueryHandler } from "../../src/modules/registrations/application/queries/get-event-registrations/get-event-registrations.handler";
+import { GetEventRegistrationQueryHandler } from "../../src/modules/registrations/application/queries/get-event-registration/get-event-registration.handler";
+import { GetRegistrationsCountQueryHandler } from "../../src/modules/registrations/application/queries/get-registrations-count/get-registrations-count.handler";
 import { registerRegistrationRoutes } from "../../src/modules/registrations/presentation/controllers/registration.controller";
 import { RegistrationOrmEntity } from "../../src/modules/registrations/infrastructure/orm/entities/registration.orm-entity";
-import { CancelRegistrationUseCase } from "../../src/modules/registrations/application/use-cases/cancel-registration.use-case";
-import { GetRegistrationsCountUseCase } from "../../src/modules/registrations/application/use-cases/get-registrations-count.use-case";
 import { EventInfoRepositoryAdapter } from "../../src/modules/registrations/infrastructure/adapters/event-info.repository.adapter";
 import { TicketInfoRepositoryAdapter } from "../../src/modules/registrations/infrastructure/adapters/ticket-info.repository.adapter";
 import { DataSource } from "typeorm";
@@ -132,26 +137,36 @@ export async function buildIntegrationTestApp() {
   );
 
   // Venues
-  const venueRepository = new PostgresVenueRepository(dataSource.getRepository(VenueOrmEntity));
-  const venueFactory = new VenueFactory(venueRepository);
-  const createVenueUseCase = new CreateVenueUseCase(venueRepository, venueFactory);
-  const getAllVenuesUseCase = new GetAllVenuesUseCase(venueRepository);
-  const getVenueByIdUseCase = new GetVenueByIdUseCase(venueRepository);
-  const updateVenueUseCase = new UpdateVenueUseCase(venueRepository, venueFactory);
+  const venueOrmRepo = dataSource.getRepository(VenueOrmEntity);
+
+  const venueWriteRepository = new PostgresVenueRepository(venueOrmRepo);
+  const venueReadRepository = new PostgresVenueReadRepository(venueOrmRepo);
+
+  const venueFactory = new VenueFactory(venueWriteRepository);
+
+  const createVenueHandler = new CreateVenueCommandHandler(venueWriteRepository, venueFactory);
+  const updateVenueHandler = new UpdateVenueCommandHandler(venueWriteRepository, venueFactory);
 
   const eventOrmRepo = dataSource.getRepository(EventOrmEntity);
   const realEventChecker = new TypeOrmVenueEventChecker(eventOrmRepo);
+  const deleteVenueHandler = new DeleteVenueCommandHandler(venueWriteRepository, realEventChecker);
 
-  const deleteVenueUseCase = new DeleteVenueUseCase(venueRepository, realEventChecker);
+  const getAllVenuesHandler = new GetAllVenuesQueryHandler(venueReadRepository);
+  const getVenueByIdHandler = new GetVenueByIdQueryHandler(venueReadRepository);
 
   // Events
   const eventRepository = new PostgresEventRepository(dataSource.getRepository(EventOrmEntity));
-  const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdUseCase);
+  const eventReadRepository = new PostgresEventReadRepository(
+    dataSource.getRepository(EventOrmEntity),
+  );
+
+  const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdHandler);
 
   const eventFactory = new EventFactory(eventVenueAdapter);
 
-  const getEventsUseCase = new GetEventsUseCase(eventRepository);
-  const getEventUseCase = new GetEventUseCase(eventRepository);
+  const getEventsUseCase = new GetEventsUseCase(eventReadRepository);
+  const getEventUseCase = new GetEventUseCase(eventReadRepository);
+
   const updateEventUseCase = new UpdateEventUseCase(eventRepository, eventVenueAdapter);
   const cancelEventUseCase = new CancelEventUseCase(eventRepository);
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
@@ -159,12 +174,19 @@ export async function buildIntegrationTestApp() {
 
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
-  const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdUseCase);
+  const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdHandler);
+  const ticketReadRepository = new PostgresTicketReadRepository(
+    dataSource.getRepository(TicketOrmEntity),
+  );
+
   const eventLookupAdapter = new EventLookupAdapter(getEventUseCase);
 
   const ticketFactory = new TicketFactory(ticketRepository, ticketVenueAdapter);
 
-  const getEventTicketsUseCase = new GetEventTicketsUseCase(ticketRepository, eventLookupAdapter);
+  const getEventTicketsUseCase = new GetEventTicketsUseCase(
+    ticketReadRepository,
+    eventReadRepository,
+  );
   const createTicketUseCase = new CreateTicketUseCase(
     ticketFactory,
     ticketRepository,
@@ -173,38 +195,56 @@ export async function buildIntegrationTestApp() {
 
   // Registrations
   const registrationOrmRepository = dataSource.getRepository(RegistrationOrmEntity);
-  const registrationRepository = new PostgresRegistrationRepository(registrationOrmRepository);
+
+  const registrationWriteRepository = new PostgresRegistrationRepository(registrationOrmRepository);
+  const registrationReadRepository = new PostgresRegistrationReadRepository(
+    registrationOrmRepository,
+  );
 
   const eventInfoRepository = new EventInfoRepositoryAdapter(eventRepository);
   const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketRepository);
+
   const registrationFactory = new RegistrationFactory(
-    registrationRepository,
+    registrationWriteRepository,
     ticketInfoRepository,
     eventInfoRepository,
   );
 
-  const createRegistrationUseCase = new CreateRegistrationUseCase(
-    registrationRepository,
+  const createRegistrationHandler = new CreateRegistrationCommandHandler(
+    registrationWriteRepository,
     registrationFactory,
   );
-  const getUserRegistrationsUseCase = new GetUserRegistrationsUseCase(registrationRepository);
-  const getUserRegistrationUseCase = new GetUserRegistrationUseCase(registrationRepository);
-  const getEventRegistrationsUseCase = new GetEventRegistrationsUseCase(registrationRepository);
-  const getEventRegistrationUseCase = new GetEventRegistrationUseCase(registrationRepository);
-  const cancelRegistrationUseCase = new CancelRegistrationUseCase(registrationRepository);
-  const getRegistrationsCountUseCase = new GetRegistrationsCountUseCase(
-    registrationRepository,
-    ticketInfoRepository,
+  const cancelRegistrationHandler = new CancelRegistrationCommandHandler(
+    registrationWriteRepository,
+  );
+
+  const getUserRegistrationsHandler = new GetUserRegistrationsQueryHandler(
+    registrationReadRepository,
+  );
+  const getUserRegistrationHandler = new GetUserRegistrationQueryHandler(
+    registrationReadRepository,
+  );
+  const getEventRegistrationsHandler = new GetEventRegistrationsQueryHandler(
+    registrationReadRepository,
+    eventInfoRepository,
+  );
+  const getEventRegistrationHandler = new GetEventRegistrationQueryHandler(
+    registrationReadRepository,
     eventInfoRepository,
   );
 
-  // Events create use case depends on tickets for TicketCreatorAdapter
+  const getRegistrationsCountHandler = new GetRegistrationsCountQueryHandler(
+    registrationReadRepository,
+    eventInfoRepository,
+    ticketInfoRepository,
+  );
+
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
   const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, ticketCreator);
 
   // Tickets update and delete use cases depend on registration for ticketRegistrationAdapter
   const ticketRegistrationAdapter = new TicketRegistrationModuleAdapter(
-    getRegistrationsCountUseCase,
+    getRegistrationsCountHandler,
   );
   const updateTicketUseCase = new UpdateTicketUseCase(
     ticketRepository,
@@ -226,11 +266,11 @@ export async function buildIntegrationTestApp() {
   venueRoutes(
     app,
     {
-      createVenueUseCase,
-      getAllVenuesUseCase,
-      getVenueByIdUseCase,
-      updateVenueUseCase,
-      deleteVenueUseCase,
+      createVenueHandler,
+      getAllVenuesHandler,
+      getVenueByIdHandler,
+      updateVenueHandler,
+      deleteVenueHandler,
     },
     guards,
   );
@@ -269,13 +309,13 @@ export async function buildIntegrationTestApp() {
   registerRegistrationRoutes(
     app,
     {
-      createRegistrationUseCase,
-      getUserRegistrationsUseCase,
-      getUserRegistrationUseCase,
-      getEventRegistrationsUseCase,
-      getEventRegistrationUseCase,
-      cancelRegistrationUseCase,
-      getRegistrationsCountUseCase,
+      createRegistrationHandler,
+      cancelRegistrationHandler,
+      getUserRegistrationsHandler,
+      getUserRegistrationHandler,
+      getEventRegistrationsHandler,
+      getEventRegistrationHandler,
+      getRegistrationsCountHandler,
     },
     guards,
   );
