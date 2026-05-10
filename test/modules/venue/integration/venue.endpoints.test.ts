@@ -210,7 +210,19 @@ describe("Venue Endpoints (Integration)", () => {
 
       const venueId = (createRes.json() as Record<string, unknown>).id as string;
 
-      testApp.eventChecker.setHasEvents(venueId, true);
+      await testApp.app.inject({
+        method: "POST",
+        url: "/events",
+        headers: { authorization: `Bearer ${adminAccessToken}` },
+        payload: {
+          name: "Hall Event",
+          organisator: "Org",
+          description: "Desc",
+          start_timestamp: new Date(Date.now() + 1000).toISOString(),
+          end_timestamp: new Date(Date.now() + 2000).toISOString(),
+          venue_id: venueId,
+        },
+      });
 
       const res = await testApp.app.inject({
         method: "DELETE",

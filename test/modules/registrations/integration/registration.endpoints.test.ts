@@ -93,7 +93,7 @@ describe("Registration Endpoints (Integration)", () => {
       },
     });
 
-    return (res.json() as { event: { id: number } }).event.id;
+    return (res.json() as { id: number }).id;
   }
 
   async function createTicket(eventId: number): Promise<number> {
@@ -104,7 +104,7 @@ describe("Registration Endpoints (Integration)", () => {
       payload: { type: "regular", limit: 10, price: 5 },
     });
 
-    return (res.json() as { ticket: { id: number } }).ticket.id;
+    return (res.json() as { id: number }).id;
   }
 
   describe("POST /events/:eventId/registrations", () => {
@@ -115,8 +115,9 @@ describe("Registration Endpoints (Integration)", () => {
 
       const res = await testApp.app.inject({
         method: "POST",
-        url: "/events/1/registrations",
-        payload: { ticketId: 10 },
+        url: `/events/${eventId}/registrations`,
+        headers: { authorization: `Bearer ${userAccessToken}` },
+        payload: { ticketId: ticketId },
       });
 
       expect(res.statusCode).toBe(201);
@@ -125,9 +126,12 @@ describe("Registration Endpoints (Integration)", () => {
     });
 
     it("returns 400 when ticketId is missing", async () => {
-      const res = await app.inject({
+      const venueId = await createVenue();
+      const eventId = await createEvent(venueId);
+
+      const res = await testApp.app.inject({
         method: "POST",
-        url: "/events/1/registrations",
+        url: `/events/${eventId}/registrations`,
         headers: { authorization: `Bearer ${userAccessToken}` },
         payload: {},
       });
@@ -139,6 +143,7 @@ describe("Registration Endpoints (Integration)", () => {
       const res = await testApp.app.inject({
         method: "POST",
         url: "/events/invalid/registrations",
+        headers: { authorization: `Bearer ${userAccessToken}` },
         payload: { ticketId: 10 },
       });
 
@@ -154,8 +159,9 @@ describe("Registration Endpoints (Integration)", () => {
 
       await testApp.app.inject({
         method: "POST",
-        url: "/events/1/registrations",
-        payload: { ticketId: 10 },
+        url: `/events/${eventId}/registrations`,
+        headers: { authorization: `Bearer ${userAccessToken}` },
+        payload: { ticketId: ticketId },
       });
 
       const res = await testApp.app.inject({
@@ -191,8 +197,9 @@ describe("Registration Endpoints (Integration)", () => {
 
       const createRes = await testApp.app.inject({
         method: "POST",
-        url: "/events/1/registrations",
-        payload: { ticketId: 10 },
+        url: `/events/${eventId}/registrations`,
+        headers: { authorization: `Bearer ${userAccessToken}` },
+        payload: { ticketId: ticketId },
       });
 
       const registrationId = (

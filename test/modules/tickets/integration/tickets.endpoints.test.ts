@@ -4,7 +4,7 @@ import {
 } from "../../../shared/integration-app.builder";
 import { TicketType } from "../../../../src/modules/tickets/domain/value-objects/ticket-type.enum";
 
-describe("Tickets Endpoints (Integration, in-memory)", () => {
+describe("Tickets Endpoints (Integration)", () => {
   let testApp: IntegrationTestApp;
   let adminAccessToken: string;
 
@@ -47,8 +47,8 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
     await testApp.dataSource.destroy();
   });
 
-  it("POST /events/:eventId/tickets -> 201 and returns id", async () => {
-    const res = await app.inject({
+  async function createVenue(): Promise<string> {
+    const res = await testApp.app.inject({
       method: "POST",
       url: "/venues",
       headers: { authorization: `Bearer ${adminAccessToken}` },
@@ -77,7 +77,7 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
       },
     });
 
-    return (res.json() as { event: { id: number } }).event.id;
+    return (res.json() as { id: number }).id;
   }
 
   it("POST /events/:eventId/tickets -> 201 and returns created ticket", async () => {
@@ -102,7 +102,10 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
   });
 
   it("GET /events/:eventId/tickets returns list with read model fields", async () => {
-    const create = await app.inject({
+    const venueId = await createVenue();
+    const eventId = await createEvent(venueId);
+
+    const create = await testApp.app.inject({
       method: "POST",
       url: `/events/${eventId}/tickets`,
       headers: { authorization: `Bearer ${adminAccessToken}` },
@@ -118,7 +121,7 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
     const arr = res.json();
     expect(Array.isArray(arr)).toBe(true);
     expect(arr.length).toBeGreaterThanOrEqual(1);
-    expect(arr[0].event_id).toBe(1);
+    expect(arr[0].event_id).toBe(eventId);
     expect(arr[0].type).toBeDefined();
   });
 
@@ -210,7 +213,7 @@ describe("Tickets Endpoints (Integration, in-memory)", () => {
       method: "POST",
       url: `/events/${eventId}/registrations`,
       headers: { authorization: `Bearer ${userAccessToken}` },
-      payload: { ticket_id: id },
+      payload: { ticketId: id },
     });
 
     const res = await testApp.app.inject({

@@ -3,7 +3,7 @@ import {
   IntegrationTestApp,
 } from "../../../shared/integration-app.builder";
 
-describe("Events Endpoints (Integration, in-memory)", () => {
+describe("Events Endpoints (Integration)", () => {
   let testApp: IntegrationTestApp;
   let adminAccessToken: string;
 
@@ -46,8 +46,25 @@ describe("Events Endpoints (Integration, in-memory)", () => {
     await testApp.dataSource.destroy();
   });
 
+  async function createVenue(): Promise<string> {
+    const res = await testApp.app.inject({
+      method: "POST",
+      url: "/venues",
+      headers: { authorization: `Bearer ${adminAccessToken}` },
+      payload: {
+        name: "Main Hall",
+        capacity: 500,
+        address: "123 Main St",
+      },
+    });
+
+    return (res.json() as { id: string }).id;
+  }
+
   it("POST /events -> 201 and returns id", async () => {
-    const res = await app.inject({
+    const venueId = await createVenue();
+
+    const res = await testApp.app.inject({
       method: "POST",
       url: "/events",
       headers: { authorization: `Bearer ${adminAccessToken}` },
@@ -69,7 +86,9 @@ describe("Events Endpoints (Integration, in-memory)", () => {
   });
 
   it("GET /events returns list with read model fields", async () => {
-    await app.inject({
+    const venueId = await createVenue();
+
+    await testApp.app.inject({
       method: "POST",
       url: "/events",
       headers: { authorization: `Bearer ${adminAccessToken}` },
@@ -109,7 +128,11 @@ describe("Events Endpoints (Integration, in-memory)", () => {
       },
     });
     const id = create.json().id;
-    const res = await app.inject({ method: "PATCH", url: `/events/${id}/cancel` });
+    const res = await testApp.app.inject({
+      method: "PATCH",
+      url: `/events/${id}/cancel`,
+      headers: { authorization: `Bearer ${adminAccessToken}` },
+    });
     expect(res.statusCode).toBe(204);
   });
 
@@ -130,7 +153,7 @@ describe("Events Endpoints (Integration, in-memory)", () => {
       },
     });
     const id = create.json().id;
-    const res = await app.inject({
+    const res = await testApp.app.inject({
       method: "PATCH",
       url: `/events/${id}`,
       headers: { authorization: `Bearer ${adminAccessToken}` },
