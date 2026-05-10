@@ -11,6 +11,6 @@ export class EventInfoRepositoryAdapter implements IEventInfoRepository {
     if (event.id === null) {
       throw new DomainError("Event id is missing");
     }
-    return { id: event.id };
+    return { id: event.id, name: event.name };
   }
 }
