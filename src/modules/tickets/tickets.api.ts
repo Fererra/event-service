@@ -15,7 +15,7 @@ export interface TicketSummaryDto {
   limit: number;
 }
 
-export class TicketsModule {
+export class TicketsApi {
   constructor(
     private readonly createTicketUseCase: CreateTicketUseCase,
     private readonly ticketRepository: ITicketRepository,
