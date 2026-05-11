@@ -1,4 +1,5 @@
 import { GetEventUseCase } from "./application/queries/get-event.use-case";
+import { CheckVenueHasEventsUseCase } from "./application/queries/check-venue-events.use-case";
 import { NotFoundError } from "../../shared/domain/errors/domain.error";
 
 export interface EventSummaryDto {
@@ -10,7 +11,10 @@ export interface EventSummaryDto {
 }
 
 export class EventsApi {
-  constructor(private readonly getEventUseCase: GetEventUseCase) {}
+  constructor(
+    private readonly getEventUseCase: GetEventUseCase,
+    private readonly checkVenueHasEventsUseCase: CheckVenueHasEventsUseCase,
+  ) {}
 
   async findById(id: number): Promise<EventSummaryDto | null> {
     try {
@@ -24,6 +28,14 @@ export class EventsApi {
       };
     } catch (error) {
       if (error instanceof NotFoundError) return null;
+      throw error;
+    }
+  }
+
+  async checkVenueHasEvents(venueId: string): Promise<boolean> {
+    try {
+      return await this.checkVenueHasEventsUseCase.execute(venueId);
+    } catch (error) {
       throw error;
     }
   }
