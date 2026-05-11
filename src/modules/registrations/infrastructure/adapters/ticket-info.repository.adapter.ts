@@ -1,19 +1,21 @@
-import { ITicketRepository } from "../../../tickets/domain/repositories/ticket.repository.interface";
 import {
   ITicketInfoRepository,
   TicketInfo,
 } from "../../domain/repositories/ticket-info.repository";
+import { TicketsApi } from "../../../tickets/tickets.api";
 
 export class TicketInfoRepositoryAdapter implements ITicketInfoRepository {
-  constructor(private readonly ticketRepository: ITicketRepository) {}
+  constructor(private readonly ticketsApi: TicketsApi) {}
 
   async findById(id: number): Promise<TicketInfo | null> {
-    const ticket = await this.ticketRepository.findById(id);
-    if (!ticket) return null;
+    const ticketDto = await this.ticketsApi.findById(id);
+
+    if (!ticketDto) return null;
+
     return {
-      id: ticket.persistedId,
-      eventId: ticket.eventId,
-      limit: ticket.limit,
+      id: ticketDto.id,
+      eventId: ticketDto.eventId,
+      limit: ticketDto.limit,
     };
   }
 }
