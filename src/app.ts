@@ -83,6 +83,7 @@ import { GetMeQueryHandler } from "./modules/auth/application/queries/get-me.que
 import { GetUserQueryHandler } from "./modules/auth/application/queries/get-user.query-handler";
 import { GetUsersQueryHandler } from "./modules/auth/application/queries/get-users.query-handler";
 import { registerUserRoutes } from "./modules/auth/presentation/controllers/user.controller";
+import { RegistrationApi } from "./modules/registrations/api/registration.api";
 
 // Notifications
 import { ConsoleNotificationService } from "./modules/notifications/infrastructure/console.notification.service";
@@ -175,7 +176,10 @@ async function bootstrap() {
     eventBus,
   );
 
+  // Placeholders
   const eventApiPlaceholder = { execute: async () => [] } as any;
+  const ticketApiPlaceholder = { findById: async () => null } as any;
+
   const venueEventChecker = new VenueEventCheckerAdapter(eventApiPlaceholder);
 
   const deleteVenueHandler = new DeleteVenueCommandHandler(
@@ -235,7 +239,7 @@ async function bootstrap() {
   );
 
   const eventInfoRepository = new EventInfoRepositoryAdapter(eventApiPlaceholder);
-  const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketRepository);
+  const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketApiPlaceholder);
 
   const notificationService = new ConsoleNotificationService();
 
@@ -275,6 +279,7 @@ async function bootstrap() {
 
   const cancelRegistrationHandler = new CancelRegistrationCommandHandler(
     registrationWriteRepository,
+    eventBus,
   );
 
   const getUserRegistrationsHandler = new GetUserRegistrationsQueryHandler(
@@ -298,13 +303,13 @@ async function bootstrap() {
     ticketInfoRepository,
   );
 
+  const registrationApi = new RegistrationApi(getRegistrationsCountHandler);
+
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
   const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, ticketCreator);
 
   // Tickets update and delete use cases depend on registration for ticketRegistrationAdapter
-  const ticketRegistrationAdapter = new TicketRegistrationModuleAdapter(
-    getRegistrationsCountHandler,
-  );
+  const ticketRegistrationAdapter = new TicketRegistrationModuleAdapter(registrationApi as any);
   const updateTicketUseCase = new UpdateTicketUseCase(
     ticketRepository,
     eventLookupAdapter,
