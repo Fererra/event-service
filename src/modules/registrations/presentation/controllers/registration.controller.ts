@@ -154,7 +154,6 @@ export function registerRegistrationRoutes(
 
       const command = new CancelRegistrationCommand(
         req.params.registrationId,
-        req.params.userId,
         user.id,
         parseUserRole(user.role),
       );
