@@ -3,8 +3,9 @@ import { EventStatus } from "../value-objects/event-status.enum";
 import { EventPeriod } from "../value-objects/event-period.vo";
 import { IVenueRepository } from "../repositories/venue.repository.interface";
 import { InlineTicketData } from "../repositories/ticket-creator.interface";
-import { TicketType } from "../../../tickets/domain/value-objects/ticket-type.enum";
 import { DomainError, NotFoundError } from "../../../../shared/domain/errors/domain.error";
+
+const TICKET_TYPES = ["regular", "vip", "early_bird"] as const;
 
 export interface CreateEventData {
   ownerId: string;
@@ -28,7 +29,7 @@ export class EventFactory {
 
     if (data.tickets && data.tickets.length > 0) {
       for (const ticket of data.tickets) {
-        if (!Object.values(TicketType).includes(ticket.type as TicketType)) {
+        if (!TICKET_TYPES.includes(ticket.type as (typeof TICKET_TYPES)[number])) {
           throw new DomainError(`Unknown ticket type: ${ticket.type}`);
         }
       }
