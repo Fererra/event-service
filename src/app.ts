@@ -20,7 +20,6 @@ import { RefreshTokenOrmEntity } from "./modules/auth/infrastructure/orm/entitie
 
 // Venues imports
 import { venueRoutes } from "./modules/venue/presentation/controllers/venue.controller";
-
 import { CreateVenueCommandHandler } from "./modules/venue/application/commands/create-venue/create-venue.handler";
 import { UpdateVenueCommandHandler } from "./modules/venue/application/commands/update-venue/update-venue.handler";
 import { DeleteVenueCommandHandler } from "./modules/venue/application/commands/delete-venue/delete-venue.handler";
@@ -29,8 +28,9 @@ import { GetVenueByIdQueryHandler } from "./modules/venue/application/queries/ge
 import { VenueFactory } from "./modules/venue/domain/factories/venue.factory";
 import { PostgresVenueRepository } from "./modules/venue/infrastructure/repositories/postgres-venue.repository";
 import { PostgresVenueReadRepository } from "./modules/venue/infrastructure/repositories/postgres-venue-read.repository";
-import { TypeOrmVenueEventChecker } from "./modules/venue/infrastructure/repositories/venue-event-checker";
+import { VenueEventCheckerAdapter } from "./modules/venue/infrastructure/adapters/venue-event-checker.adapter";
 import { VenueOrmEntity } from "./modules/venue/infrastructure/orm/entities/venue.orm-entity";
+import { VenueApi } from "./modules/venue/api/venue.api";
 
 // Events imports
 import { EventOrmEntity } from "./modules/events/infrastructure/orm/entities/event.orm-entity";
@@ -83,6 +83,7 @@ import { GetMeQueryHandler } from "./modules/auth/application/queries/get-me.que
 import { GetUserQueryHandler } from "./modules/auth/application/queries/get-user.query-handler";
 import { GetUsersQueryHandler } from "./modules/auth/application/queries/get-users.query-handler";
 import { registerUserRoutes } from "./modules/auth/presentation/controllers/user.controller";
+import { RegistrationApi } from "./modules/registrations/api/registration.api";
 
 // Notifications
 import { ConsoleNotificationService } from "./modules/notifications/infrastructure/console.notification.service";
@@ -93,6 +94,7 @@ import { RegistrationCreatedEvent } from "./shared/domain/events/registration-cr
 import { EventCancelledEvent } from "./shared/domain/events/event-cancelled.event";
 import { CreateRegistrationAsyncCommandHandler } from "./modules/registrations/application/commands/create-registration/create-registration-async.handler";
 import { CancelEventAsyncUseCase } from "./modules/events/application/commands/cancel-event-async.use-case";
+import { NotificationsApi } from "./modules/notifications/notifications.api";
 
 async function bootstrap() {
   const config = {
@@ -114,6 +116,9 @@ async function bootstrap() {
 
   const dataSource = createDataSource(config.db);
   await dataSource.initialize();
+
+  // Event Bus
+  const eventBus = new InProcessEventBus();
 
   // Auth
   const userRepository = new PostgresUserRepository(dataSource.getRepository(UserOrmEntity));
@@ -161,15 +166,32 @@ async function bootstrap() {
 
   const venueFactory = new VenueFactory(venueWriteRepository);
 
-  const createVenueHandler = new CreateVenueCommandHandler(venueWriteRepository, venueFactory);
-  const updateVenueHandler = new UpdateVenueCommandHandler(venueWriteRepository, venueFactory);
+  const createVenueHandler = new CreateVenueCommandHandler(
+    venueWriteRepository,
+    venueFactory,
+    eventBus,
+  );
+  const updateVenueHandler = new UpdateVenueCommandHandler(
+    venueWriteRepository,
+    venueFactory,
+    eventBus,
+  );
 
-  const eventOrmRepo = dataSource.getRepository(EventOrmEntity);
-  const realEventChecker = new TypeOrmVenueEventChecker(eventOrmRepo);
-  const deleteVenueHandler = new DeleteVenueCommandHandler(venueWriteRepository, realEventChecker);
+  // Placeholders
+  const eventApiPlaceholder = { execute: async () => [] } as any;
+  const ticketApiPlaceholder = { findById: async () => null } as any;
+
+  const venueEventChecker = new VenueEventCheckerAdapter(eventApiPlaceholder);
+
+  const deleteVenueHandler = new DeleteVenueCommandHandler(
+    venueWriteRepository,
+    venueEventChecker,
+    eventBus,
+  );
 
   const getAllVenuesHandler = new GetAllVenuesQueryHandler(venueReadRepository);
   const getVenueByIdHandler = new GetVenueByIdQueryHandler(venueReadRepository);
+  const venueApi = new VenueApi(getVenueByIdHandler);
 
   // Events
   const eventRepository = new PostgresEventRepository(dataSource.getRepository(EventOrmEntity));
@@ -177,7 +199,7 @@ async function bootstrap() {
     dataSource.getRepository(EventOrmEntity),
   );
 
-  const eventVenueAdapter = new EventVenueModuleAdapter(getVenueByIdHandler);
+  const eventVenueAdapter = new EventVenueModuleAdapter(venueApi as any);
 
   const eventFactory = new EventFactory(eventVenueAdapter);
 
@@ -190,7 +212,7 @@ async function bootstrap() {
 
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
-  const ticketVenueAdapter = new TicketVenueModuleAdapter(getVenueByIdHandler);
+  const ticketVenueAdapter = new TicketVenueModuleAdapter(venueApi as any);
   const ticketReadRepository = new PostgresTicketReadRepository(
     dataSource.getRepository(TicketOrmEntity),
   );
@@ -217,13 +239,11 @@ async function bootstrap() {
     registrationOrmRepository,
   );
 
-  const eventInfoRepository = new EventInfoRepositoryAdapter(eventRepository);
-  const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketRepository);
+  const eventInfoRepository = new EventInfoRepositoryAdapter(eventApiPlaceholder);
+  const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketApiPlaceholder);
 
   const notificationService = new ConsoleNotificationService();
 
-  // Event Bus
-  const eventBus = new InProcessEventBus();
   const registrationCreatedNotificationHandler = new RegistrationCreatedCommandHandler(
     notificationService,
   );
@@ -247,7 +267,8 @@ async function bootstrap() {
     eventInfoRepository,
     notificationService,
   );
-  const cancelEventUseCase = new CancelEventUseCase(eventRepository, notificationService);
+  const notificationsApi = new NotificationsApi(notificationService);
+  const cancelEventUseCase = new CancelEventUseCase(eventRepository, notificationsApi);
 
   // Async варіанти
   const createRegistrationAsyncHandler = new CreateRegistrationAsyncCommandHandler(
@@ -260,6 +281,7 @@ async function bootstrap() {
 
   const cancelRegistrationHandler = new CancelRegistrationCommandHandler(
     registrationWriteRepository,
+    eventBus,
   );
 
   const getUserRegistrationsHandler = new GetUserRegistrationsQueryHandler(
@@ -283,13 +305,13 @@ async function bootstrap() {
     ticketInfoRepository,
   );
 
+  const registrationApi = new RegistrationApi(getRegistrationsCountHandler);
+
   const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
   const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, ticketCreator);
 
   // Tickets update and delete use cases depend on registration for ticketRegistrationAdapter
-  const ticketRegistrationAdapter = new TicketRegistrationModuleAdapter(
-    getRegistrationsCountHandler,
-  );
+  const ticketRegistrationAdapter = new TicketRegistrationModuleAdapter(registrationApi as any);
   const updateTicketUseCase = new UpdateTicketUseCase(
     ticketRepository,
     eventLookupAdapter,

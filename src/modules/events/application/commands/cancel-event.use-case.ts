@@ -1,4 +1,4 @@
-import { INotificationService } from "../../../notifications/application/ports/notification.service";
+import { NotificationsApi } from "../../../notifications/notifications.api";
 import { NotFoundError, UnauthorizedError } from "../../../../shared/domain/errors/domain.error";
 import { IEventRepository } from "../../domain/repositories/event.repository.interface";
 
@@ -10,7 +10,7 @@ export interface CancelEventCommand {
 export class CancelEventUseCase {
   constructor(
     private readonly eventsRepository: IEventRepository,
-    private readonly notificationService: INotificationService,
+    private readonly notificationsApi: NotificationsApi,
   ) {}
 
   async execute(command: CancelEventCommand): Promise<void> {
@@ -26,7 +26,7 @@ export class CancelEventUseCase {
     await this.eventsRepository.save(event);
 
     try {
-      await this.notificationService.sendEventCancelledNotification({
+      await this.notificationsApi.notifyEventCancelled({
         eventId: event.id!,
         eventName: event.name,
         ownerId: event.ownerId,
