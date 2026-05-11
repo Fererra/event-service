@@ -2,20 +2,15 @@ import {
   InlineTicketData,
   ITicketCreator,
 } from "../../domain/repositories/ticket-creator.interface";
-import { CreateTicketUseCase } from "../../../tickets/application/commands/create-ticket.use-case";
-import { TicketType } from "../../../tickets/domain/value-objects/ticket-type.enum";
+import { TicketsApi } from "../../../tickets/tickets.api";
 
 export class TicketCreatorAdapter implements ITicketCreator {
-  constructor(private readonly createTicketUseCase: CreateTicketUseCase) {}
+  constructor(private readonly ticketsModule: TicketsApi) {}
 
   async createTicketsForEvent(eventId: number, tickets: InlineTicketData[]): Promise<void> {
-    for (const ticketData of tickets) {
-      await this.createTicketUseCase.execute({
-        eventId,
-        type: ticketData.type as TicketType,
-        limit: ticketData.limit,
-        price: ticketData.price,
-      });
-    }
+    await this.ticketsModule.createTicketsForEvent(
+      eventId,
+      tickets.map((t) => ({ type: t.type, limit: t.limit, price: t.price })),
+    );
   }
 }
