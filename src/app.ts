@@ -94,6 +94,7 @@ import { RegistrationCreatedEvent } from "./shared/domain/events/registration-cr
 import { EventCancelledEvent } from "./shared/domain/events/event-cancelled.event";
 import { CreateRegistrationAsyncCommandHandler } from "./modules/registrations/application/commands/create-registration/create-registration-async.handler";
 import { CancelEventAsyncUseCase } from "./modules/events/application/commands/cancel-event-async.use-case";
+import { NotificationsApi } from "./modules/notifications/notifications.api";
 
 async function bootstrap() {
   const config = {
@@ -266,7 +267,8 @@ async function bootstrap() {
     eventInfoRepository,
     notificationService,
   );
-  const cancelEventUseCase = new CancelEventUseCase(eventRepository, notificationService);
+  const notificationsApi = new NotificationsApi(notificationService);
+  const cancelEventUseCase = new CancelEventUseCase(eventRepository, notificationsApi);
 
   // Async варіанти
   const createRegistrationAsyncHandler = new CreateRegistrationAsyncCommandHandler(
