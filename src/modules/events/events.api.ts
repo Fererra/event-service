@@ -9,7 +9,7 @@ export interface EventSummaryDto {
   ownerId: string;
 }
 
-export class EventsModule {
+export class EventsApi {
   constructor(private readonly getEventUseCase: GetEventUseCase) {}
 
   async findById(id: number): Promise<EventSummaryDto | null> {
