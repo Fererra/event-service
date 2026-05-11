@@ -36,6 +36,7 @@ import { VenueApi } from "./modules/venue/api/venue.api";
 import { EventOrmEntity } from "./modules/events/infrastructure/orm/entities/event.orm-entity";
 import { PostgresEventRepository } from "./modules/events/infrastructure/repositories/postgres-event.repository";
 import { PostgresEventReadRepository } from "./modules/events/infrastructure/repositories/postgres-event-read.repository";
+import { PostgresVenueEventChecker } from "./modules/events/infrastructure/repositories/postgres-venue-event-checker.repository";
 import { VenueModuleAdapter as EventVenueModuleAdapter } from "./modules/events/infrastructure/adapters/venue-module.adapter";
 import { TicketCreatorAdapter } from "./modules/events/infrastructure/adapters/ticket-creator.adapter";
 import { EventFactory } from "./modules/events/domain/factories/event.factory";
@@ -48,6 +49,8 @@ import { DeleteEventUseCase } from "./modules/events/application/commands/delete
 import { registerEventRoutes } from "./modules/events/presentation/controllers/event.controller";
 import { SyncEventStatusesUseCase } from "./modules/events/application/commands/sync-event-statuses.use-case";
 import { EventCronJobs } from "./modules/events/presentation/cron/event.cron";
+import { CheckVenueHasEventsUseCase } from "./modules/events/application/queries/check-venue-events.use-case";
+import { EventsApi } from "./modules/events/events.api";
 
 // Tickets imports
 import { TicketOrmEntity } from "./modules/tickets/infrastructure/orm/entities/ticket.orm-entity";
@@ -62,6 +65,7 @@ import { CreateTicketUseCase } from "./modules/tickets/application/commands/crea
 import { UpdateTicketUseCase } from "./modules/tickets/application/commands/update-ticket.use-case";
 import { DeleteTicketUseCase } from "./modules/tickets/application/commands/delete-ticket.use-case";
 import { registerTicketRoutes } from "./modules/tickets/presentation/controllers/ticket.controller";
+import { TicketsApi } from "./modules/tickets/tickets.api";
 
 // Registrations imports
 import { PostgresRegistrationRepository } from "./modules/registrations/infrastructure/repositories/postgres-registration.repository";
@@ -177,18 +181,6 @@ async function bootstrap() {
     eventBus,
   );
 
-  // Placeholders
-  const eventApiPlaceholder = { execute: async () => [] } as any;
-  const ticketApiPlaceholder = { findById: async () => null } as any;
-
-  const venueEventChecker = new VenueEventCheckerAdapter(eventApiPlaceholder);
-
-  const deleteVenueHandler = new DeleteVenueCommandHandler(
-    venueWriteRepository,
-    venueEventChecker,
-    eventBus,
-  );
-
   const getAllVenuesHandler = new GetAllVenuesQueryHandler(venueReadRepository);
   const getVenueByIdHandler = new GetVenueByIdQueryHandler(venueReadRepository);
   const venueApi = new VenueApi(getVenueByIdHandler);
@@ -210,6 +202,20 @@ async function bootstrap() {
   const deleteEventUseCase = new DeleteEventUseCase(eventRepository);
   const syncEventStatusesUseCase = new SyncEventStatusesUseCase(eventRepository);
 
+  const venueEventCheckerRepo = new PostgresVenueEventChecker(
+    dataSource.getRepository(EventOrmEntity),
+  );
+  const checkVenueHasEventsUseCase = new CheckVenueHasEventsUseCase(venueEventCheckerRepo);
+  const eventsApi = new EventsApi(getEventUseCase, checkVenueHasEventsUseCase);
+
+  const venueEventChecker = new VenueEventCheckerAdapter(eventsApi);
+
+  const deleteVenueHandler = new DeleteVenueCommandHandler(
+    venueWriteRepository,
+    venueEventChecker,
+    eventBus,
+  );
+
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
   const ticketVenueAdapter = new TicketVenueModuleAdapter(venueApi as any);
@@ -217,19 +223,21 @@ async function bootstrap() {
     dataSource.getRepository(TicketOrmEntity),
   );
 
-  const eventLookupAdapter = new EventLookupAdapter(getEventUseCase);
+  const eventLookupAdapter = new EventLookupAdapter(getEventUseCase as any);
 
   const ticketFactory = new TicketFactory(ticketRepository, ticketVenueAdapter);
 
   const getEventTicketsUseCase = new GetEventTicketsUseCase(
     ticketReadRepository,
-    eventReadRepository,
+    eventLookupAdapter,
   );
   const createTicketUseCase = new CreateTicketUseCase(
     ticketFactory,
     ticketRepository,
     eventLookupAdapter,
   );
+
+  const ticketsApi = new TicketsApi(createTicketUseCase, ticketRepository);
 
   // Registrations
   const registrationOrmRepository = dataSource.getRepository(RegistrationOrmEntity);
@@ -239,8 +247,8 @@ async function bootstrap() {
     registrationOrmRepository,
   );
 
-  const eventInfoRepository = new EventInfoRepositoryAdapter(eventApiPlaceholder);
-  const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketApiPlaceholder);
+  const eventInfoRepository = new EventInfoRepositoryAdapter(eventsApi);
+  const ticketInfoRepository = new TicketInfoRepositoryAdapter(ticketsApi);
 
   const notificationService = new ConsoleNotificationService();
 
@@ -307,7 +315,7 @@ async function bootstrap() {
 
   const registrationApi = new RegistrationApi(getRegistrationsCountHandler);
 
-  const ticketCreator = new TicketCreatorAdapter(createTicketUseCase);
+  const ticketCreator = new TicketCreatorAdapter(createTicketUseCase as any);
   const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, ticketCreator);
 
   // Tickets update and delete use cases depend on registration for ticketRegistrationAdapter
