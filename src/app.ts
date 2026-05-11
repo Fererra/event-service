@@ -100,6 +100,16 @@ import { CreateRegistrationAsyncCommandHandler } from "./modules/registrations/a
 import { CancelEventAsyncUseCase } from "./modules/events/application/commands/cancel-event-async.use-case";
 import { NotificationsApi } from "./modules/notifications/notifications.api";
 
+//Analytics
+import { PostgresAnalyticsRepository } from "./modules/analytics/infrastructure/repositories/postgres-analytics.repository";
+import { AnalyticsEventTranslator } from "./modules/analytics/infrastructure/acl/analytics-event.translator";
+import { OnEventCancelledHandler } from "./modules/analytics/application/handlers/on-event-cancelled.handler";
+import { OnRegistrationCreatedHandler } from "./modules/analytics/application/handlers/on-registration-created.handler";
+import { GetEventAnalyticsUseCase } from "./modules/analytics/application/queries/get-event-analytics.use-case";
+import { GetAnalyticsSummaryUseCase } from "./modules/analytics/application/queries/get-analytics-summary.use-case";
+import { registerAnalyticsRoutes } from "./modules/analytics/presentation/controllers/analytics.controller";
+import { EventStatOrmEntity } from "./modules/analytics/infrastructure/orm/entities/event-stat.orm-entity";
+
 async function bootstrap() {
   const config = {
     port: Number(process.env.PORT) || 3000,
@@ -191,7 +201,7 @@ async function bootstrap() {
     dataSource.getRepository(EventOrmEntity),
   );
 
-  const eventVenueAdapter = new EventVenueModuleAdapter(venueApi as any);
+  const eventVenueAdapter = new EventVenueModuleAdapter(venueApi);
 
   const eventFactory = new EventFactory(eventVenueAdapter);
 
@@ -218,12 +228,12 @@ async function bootstrap() {
 
   // Tickets
   const ticketRepository = new PostgresTicketRepository(dataSource.getRepository(TicketOrmEntity));
-  const ticketVenueAdapter = new TicketVenueModuleAdapter(venueApi as any);
+  const ticketVenueAdapter = new TicketVenueModuleAdapter(venueApi);
   const ticketReadRepository = new PostgresTicketReadRepository(
     dataSource.getRepository(TicketOrmEntity),
   );
 
-  const eventLookupAdapter = new EventLookupAdapter(getEventUseCase as any);
+  const eventLookupAdapter = new EventLookupAdapter(eventsApi);
 
   const ticketFactory = new TicketFactory(ticketRepository, ticketVenueAdapter);
 
@@ -315,11 +325,11 @@ async function bootstrap() {
 
   const registrationApi = new RegistrationApi(getRegistrationsCountHandler);
 
-  const ticketCreator = new TicketCreatorAdapter(createTicketUseCase as any);
+  const ticketCreator = new TicketCreatorAdapter(ticketsApi);
   const createEventUseCase = new CreateEventUseCase(eventFactory, eventRepository, ticketCreator);
 
   // Tickets update and delete use cases depend on registration for ticketRegistrationAdapter
-  const ticketRegistrationAdapter = new TicketRegistrationModuleAdapter(registrationApi as any);
+  const ticketRegistrationAdapter = new TicketRegistrationModuleAdapter(registrationApi);
   const updateTicketUseCase = new UpdateTicketUseCase(
     ticketRepository,
     eventLookupAdapter,
@@ -331,6 +341,29 @@ async function bootstrap() {
     eventLookupAdapter,
     ticketRegistrationAdapter,
   );
+
+  // Analytics
+  const analyticsRepository = new PostgresAnalyticsRepository(
+    dataSource.getRepository(EventStatOrmEntity),
+  );
+  const analyticsTranslator = new AnalyticsEventTranslator();
+
+  const onEventCancelledAnalyticsHandler = new OnEventCancelledHandler(
+    analyticsRepository,
+    analyticsTranslator,
+  );
+  const onRegistrationCreatedAnalyticsHandler = new OnRegistrationCreatedHandler(
+    analyticsRepository,
+    analyticsTranslator,
+  );
+
+  const getEventAnalyticsUseCase = new GetEventAnalyticsUseCase(analyticsRepository);
+  const getAnalyticsSummaryUseCase = new GetAnalyticsSummaryUseCase(analyticsRepository);
+
+  eventBus.subscribe(RegistrationCreatedEvent, (e) =>
+    onRegistrationCreatedAnalyticsHandler.handle(e),
+  );
+  eventBus.subscribe(EventCancelledEvent, (e) => onEventCancelledAnalyticsHandler.handle(e));
 
   // Cron Job
   const eventCronJobs = new EventCronJobs(syncEventStatusesUseCase);
@@ -396,6 +429,15 @@ async function bootstrap() {
       getEventRegistrationsHandler,
       getEventRegistrationHandler,
       getRegistrationsCountHandler,
+    },
+    guards,
+  );
+
+  registerAnalyticsRoutes(
+    app,
+    {
+      getEventAnalyticsUseCase,
+      getAnalyticsSummaryUseCase,
     },
     guards,
   );
