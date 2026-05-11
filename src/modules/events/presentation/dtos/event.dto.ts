@@ -1,6 +1,4 @@
-import { TicketType } from "../../../tickets/domain/value-objects/ticket-type.enum";
-
-const ticketTypeValues = [TicketType.REGULAR, TicketType.VIP, TicketType.EARLY_BIRD] as const;
+const ticketTypeValues = ["regular", "vip", "early_bird"] as const;
 type TicketTypeValue = (typeof ticketTypeValues)[number];
 
 export interface CreateTicketInlineDto {
