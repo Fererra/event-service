@@ -5,7 +5,6 @@ import {
   InMemoryTicketRepository,
   InMemoryTicketReadRepository,
   FakeEventLookupRepository,
-  FakeEventReadRepository,
   FakeRegistrationCountRepository,
 } from "./in-memory.repositories";
 import { InMemoryVenueRepository } from "../domain/in-memory.venue.repo";
@@ -58,15 +57,17 @@ describe("Ticket use cases (application unit)", () => {
     const t1 = InMemoryTicketRepository.createTicketForTest(3, TicketType.REGULAR, 5, 5);
     await ticketRepo.save(t1);
 
-    const eventReadRepo = new FakeEventReadRepository([3]);
-    const uc = new GetEventTicketsUseCase(readRepo, eventReadRepo);
+    const eventLookupRepo = new FakeEventLookupRepository([
+      { id: 3, venueId: TEST_VENUE_ID, isCancelledOrFinished: false },
+    ]);
+    const uc = new GetEventTicketsUseCase(readRepo, eventLookupRepo);
 
     const list = await uc.execute(3);
     expect(list.length).toBeGreaterThanOrEqual(1);
     expect(list[0].event_id).toBe(3);
 
-    const emptyEventReadRepo = new FakeEventReadRepository([]);
-    const ucMissing = new GetEventTicketsUseCase(readRepo, emptyEventReadRepo);
+    const emptyEventLookupRepo = new FakeEventLookupRepository([]);
+    const ucMissing = new GetEventTicketsUseCase(readRepo, emptyEventLookupRepo);
     await expect(ucMissing.execute(999)).rejects.toThrow();
   });
 });
