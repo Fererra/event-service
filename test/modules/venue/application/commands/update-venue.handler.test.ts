@@ -3,20 +3,22 @@ import { UpdateVenueCommand } from "../../../../../src/modules/venue/application
 import { Venue } from "../../../../../src/modules/venue/domain/entities/venue.entity";
 import { VenueFactory } from "../../../../../src/modules/venue/domain/factories/venue.factory";
 import { ConflictError, NotFoundError } from "../../../../../src/shared/domain/errors/domain.error";
-import { InMemoryVenueRepository } from "../fakes";
+import { InMemoryVenueRepository, FakeEventBus } from "../fakes";
 
 describe("UpdateVenueCommandHandler", () => {
   let handler: UpdateVenueCommandHandler;
   let venueRepo: InMemoryVenueRepository;
   let factory: VenueFactory;
+  let eventBus: FakeEventBus;
 
   beforeEach(() => {
     venueRepo = new InMemoryVenueRepository();
     factory = new VenueFactory(venueRepo);
-    handler = new UpdateVenueCommandHandler(venueRepo, factory);
+    eventBus = new FakeEventBus();
+    handler = new UpdateVenueCommandHandler(venueRepo, factory, eventBus);
   });
 
-  it("updates all provided fields successfully", async () => {
+  it("updates all provided fields successfully and publishes event", async () => {
     const venue = Venue.create({
       id: "venue-1",
       name: "Old Hall",
@@ -32,9 +34,11 @@ describe("UpdateVenueCommandHandler", () => {
     expect(updated?.name).toBe("New Hall");
     expect(updated?.capacity).toBe(1000);
     expect(updated?.address).toBe("New Address");
+
+    expect(eventBus.published.length).toBeGreaterThan(0);
   });
 
-  it("updates only specific fields when others are undefined", async () => {
+  it("updates only specific fields when others are undefined and publishes event", async () => {
     const venue = Venue.create({
       id: "venue-1",
       name: "Old Hall",
@@ -50,12 +54,16 @@ describe("UpdateVenueCommandHandler", () => {
     expect(updated?.name).toBe("Updated Hall");
     expect(updated?.capacity).toBe(500);
     expect(updated?.address).toBe("Old Address");
+
+    expect(eventBus.published.length).toBe(1);
   });
 
   it("throws NotFoundError when venue does not exist", async () => {
     const command = new UpdateVenueCommand("nonexistent", "Name", 100, "Addr");
 
     await expect(handler.handle(command)).rejects.toThrow(NotFoundError);
+
+    expect(eventBus.published.length).toBe(0);
   });
 
   it("throws ConflictError when trying to update to an already taken address", async () => {
@@ -77,6 +85,8 @@ describe("UpdateVenueCommandHandler", () => {
     const command = new UpdateVenueCommand("venue-1", undefined, undefined, "Taken Address");
 
     await expect(handler.handle(command)).rejects.toThrow(ConflictError);
+
+    expect(eventBus.published.length).toBe(0);
   });
 
   it("does not check address availability if address remains the same", async () => {
@@ -97,5 +107,7 @@ describe("UpdateVenueCommandHandler", () => {
     expect(updated?.name).toBe("New Name");
     expect(updated?.address).toBe("Same Address");
     expect(assertSpy).not.toHaveBeenCalled();
+
+    expect(eventBus.published.length).toBe(1);
   });
 });
