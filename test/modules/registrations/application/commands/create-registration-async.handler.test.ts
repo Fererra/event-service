@@ -3,28 +3,12 @@ import { CreateRegistrationCommand } from "../../../../../src/modules/registrati
 import { RegistrationFactory } from "../../../../../src/modules/registrations/domain/factories/registration.factory";
 import { DomainError, NotFoundError } from "../../../../../src/shared/domain/errors/domain.error";
 import { RegistrationCreatedEvent } from "../../../../../src/shared/domain/events/registration-created.event";
-import { IEventBus } from "../../../../../src/shared/application/ports/event-bus.interface";
-import { IntegrationEvent } from "../../../../../src/shared/domain/events/integration-event";
 import {
   FakeEventInfoRepository,
   FakeTicketInfoRepository,
   InMemoryRegistrationRepository,
+  FakeEventBus,
 } from "../fakes";
-
-class FakeEventBus implements IEventBus {
-  public published: IntegrationEvent[] = [];
-
-  async publish(event: IntegrationEvent): Promise<void> {
-    this.published.push(event);
-  }
-
-  subscribe<T extends IntegrationEvent>(
-    _eventClass: new (...args: any[]) => T,
-    _handler: (event: T) => Promise<void>,
-  ): void {
-    // no-op for tests
-  }
-}
 
 describe("CreateRegistrationAsyncCommandHandler", () => {
   let handler: CreateRegistrationAsyncCommandHandler;

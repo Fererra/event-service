@@ -1,4 +1,5 @@
 import { CancelEventUseCase } from "../../../../src/modules/events/application/commands/cancel-event.use-case";
+import { NotificationsApi } from "../../../../src/modules/notifications/notifications.api";
 import { InMemoryEventRepository } from "./in-memory.repositories";
 import { Event } from "../../../../src/modules/events/domain/entities/event.entity";
 import { EventPeriod } from "../../../../src/modules/events/domain/value-objects/event-period.vo";
@@ -9,6 +10,7 @@ describe("CancelEventUseCase", () => {
   it("cancels owned event", async () => {
     const repo = new InMemoryEventRepository();
     const notificationService = new FakeNotificationService();
+    const notificationsModule = new NotificationsApi(notificationService);
     const e = new Event({
       id: null,
       ownerId: "owner",
@@ -21,7 +23,7 @@ describe("CancelEventUseCase", () => {
       createdAt: new Date(),
     });
     const saved = await repo.save(e);
-    const uc = new CancelEventUseCase(repo, notificationService);
+    const uc = new CancelEventUseCase(repo, notificationsModule);
     await uc.execute({ eventId: saved.id as number, requestingUserId: "owner" });
     const after = await repo.findById(saved.id as number);
     expect(after?.status).toBe(EventStatus.CANCELLED);
@@ -35,7 +37,7 @@ describe("CancelEventUseCase", () => {
 
   it("throws when not owner", async () => {
     const repo = new InMemoryEventRepository();
-    const notificationService = new FakeNotificationService();
+    const notificationsModule = new NotificationsApi(new FakeNotificationService());
     const e = new Event({
       id: null,
       ownerId: "owner",
@@ -48,7 +50,7 @@ describe("CancelEventUseCase", () => {
       createdAt: new Date(),
     });
     const saved = await repo.save(e);
-    const uc = new CancelEventUseCase(repo, notificationService);
+    const uc = new CancelEventUseCase(repo, notificationsModule);
     await expect(
       uc.execute({ eventId: saved.id as number, requestingUserId: "other" }),
     ).rejects.toThrow();

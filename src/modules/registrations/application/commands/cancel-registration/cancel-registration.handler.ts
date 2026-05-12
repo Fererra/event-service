@@ -2,15 +2,16 @@ import { RegistrationRepository } from "../../../domain/repositories/registratio
 import { CancelRegistrationCommand } from "./cancel-registration.command";
 import { NotFoundError, DomainError } from "../../../../../shared/domain/errors/domain.error";
 import { UserRole } from "../../../../../shared/domain/value-objects/user-role.enum";
+import { IEventBus } from "../../../../../shared/application/ports/event-bus.interface";
+import { RegistrationCancelledEvent } from "../../../../../shared/domain/events/registration-cancelled.event";
 
 export class CancelRegistrationCommandHandler {
-  constructor(private readonly repository: RegistrationRepository) {}
+  constructor(
+    private readonly repository: RegistrationRepository,
+    private readonly eventBus: IEventBus,
+  ) {}
 
   async handle(command: CancelRegistrationCommand): Promise<void> {
-    if (command.executorRole !== UserRole.ADMIN && command.executorId !== command.targetUserId) {
-      throw new DomainError("You don't have permission to cancel this registration");
-    }
-
     const registration = await this.repository.findById(command.registrationId);
 
     if (!registration) {
@@ -22,5 +23,9 @@ export class CancelRegistrationCommandHandler {
     }
 
     await this.repository.delete(command.registrationId);
+
+    await this.eventBus.publish(
+      new RegistrationCancelledEvent(registration.id, registration.userId, registration.ticketId),
+    );
   }
 }

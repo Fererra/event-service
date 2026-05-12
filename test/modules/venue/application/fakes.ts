@@ -1,6 +1,8 @@
 import { Venue } from "../../../../src/modules/venue/domain/entities/venue.entity";
 import { VenueRepository } from "../../../../src/modules/venue/domain/repositories/venue.repository";
 import { VenueEventChecker } from "../../../../src/modules/venue/application/ports/venue-event-checker.service";
+import { IntegrationEvent } from "../../../../src/shared/domain/events/integration-event";
+import { IEventBus } from "../../../../src/shared/application/ports/event-bus.interface";
 
 export class InMemoryVenueRepository implements VenueRepository {
   private readonly store = new Map<string, Venue>();
@@ -50,5 +52,24 @@ export class FakeVenueEventChecker implements VenueEventChecker {
 
   clear(): void {
     this.venues.clear();
+  }
+}
+
+export class FakeEventBus implements IEventBus {
+  public published: IntegrationEvent[] = [];
+
+  async publish(event: IntegrationEvent): Promise<void> {
+    this.published.push(event);
+  }
+
+  subscribe<T extends IntegrationEvent>(
+    _eventClass: new (...args: any[]) => T,
+    _handler: (event: T) => Promise<void>,
+  ): void {
+    // no-op for tests
+  }
+
+  clear(): void {
+    this.published = [];
   }
 }

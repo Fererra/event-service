@@ -8,6 +8,8 @@ import {
   ITicketInfoRepository,
   TicketInfo,
 } from "../../../../src/modules/registrations/domain/repositories/ticket-info.repository";
+import { IEventBus } from "../../../../src/shared/application/ports/event-bus.interface";
+import { IntegrationEvent } from "../../../../src/shared/domain/events/integration-event";
 
 export class InMemoryRegistrationRepository implements RegistrationRepository {
   private readonly store = new Map<string, Registration>();
@@ -100,5 +102,20 @@ export class FakeTicketInfoRepository implements ITicketInfoRepository {
 
   clear(): void {
     this.tickets.clear();
+  }
+}
+
+export class FakeEventBus implements IEventBus {
+  public published: IntegrationEvent[] = [];
+
+  async publish(event: IntegrationEvent): Promise<void> {
+    this.published.push(event);
+  }
+
+  subscribe<T extends IntegrationEvent>(
+    _eventClass: new (...args: any[]) => T,
+    _handler: (event: T) => Promise<void>,
+  ): void {
+    // no-op for tests
   }
 }
